@@ -50,6 +50,7 @@ interface CrateTopo {
 interface Run {
   user: string;
   timestamp: string;
+  commit: string;
   buildTimeMs: number;
   dirtyCrates: string[];
 }
@@ -844,6 +845,17 @@ function RunList({
               {/* User */}
               <span style={{ color: C.cyan, fontFamily: MONO, minWidth: 40 }}>
                 {run.user}
+              </span>
+              {/* Commit */}
+              <span
+                style={{
+                  color: C.pink,
+                  fontFamily: MONO,
+                  fontSize: 9,
+                  minWidth: 48,
+                }}
+              >
+                {run.commit}
               </span>
               {/* Timestamp */}
               <span style={{ color: C.textDim, fontFamily: MONO, flex: 1 }}>

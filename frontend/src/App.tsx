@@ -2,6 +2,7 @@ import {
   useState,
   useCallback,
   useMemo,
+  useRef,
   createContext,
   useContext,
 } from "react";
@@ -726,7 +727,119 @@ function HeatLegend() {
   );
 }
 
+// ── Resizable column hook ────────────────────────────────────────────────────
+
+function useResizableColumns(initial: number[]) {
+  const [widths, setWidths] = useState(initial);
+  const dragging = useRef<{
+    col: number;
+    startX: number;
+    startW: number;
+  } | null>(null);
+
+  const onMouseDown = useCallback(
+    (col: number, e: React.MouseEvent) => {
+      e.preventDefault();
+      dragging.current = { col, startX: e.clientX, startW: widths[col] };
+
+      const onMouseMove = (ev: MouseEvent) => {
+        if (!dragging.current) return;
+        const diff = ev.clientX - dragging.current.startX;
+        const newW = Math.max(20, dragging.current.startW + diff);
+        setWidths((prev) => {
+          const next = [...prev];
+          next[dragging.current!.col] = newW;
+          return next;
+        });
+      };
+
+      const onMouseUp = () => {
+        dragging.current = null;
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [widths],
+  );
+
+  const template = widths.map((w) => `${w}px`).join(" ");
+
+  return { widths, template, onMouseDown };
+}
+
+// ── Panel resize handle ──────────────────────────────────────────────────────
+
+function PanelHandle({ onDrag }: { onDrag: (delta: number) => void }) {
+  const { C } = useTheme();
+  const [hover, setHover] = useState(false);
+
+  const onMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      let lastX = e.clientX;
+      const onMouseMove = (ev: MouseEvent) => {
+        const dx = ev.clientX - lastX;
+        lastX = ev.clientX;
+        onDrag(dx);
+      };
+      const onMouseUp = () => {
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [onDrag],
+  );
+
+  return (
+    <div
+      onMouseDown={onMouseDown}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width: 6,
+        flexShrink: 0,
+        cursor: "col-resize",
+        display: "flex",
+        justifyContent: "center",
+        background: hover ? C.accent + "22" : "transparent",
+        transition: "background 0.1s",
+      }}
+    >
+      <div
+        style={{
+          width: 1,
+          height: "100%",
+          background: hover ? C.accent : C.border,
+          transition: "background 0.1s",
+        }}
+      />
+    </div>
+  );
+}
+
 // ── Run list (left panel inside detail view) ─────────────────────────────────
+
+const RUN_COLS = [
+  { key: "sel", label: "✓", init: 20 },
+  { key: "user", label: "User", init: 42 },
+  { key: "commit", label: "Commit", init: 54 },
+  { key: "time", label: "Time", init: 72 },
+  { key: "build", label: "Build", init: 44 },
+  { key: "dirty", label: "Δ", init: 20 },
+];
 
 function RunList({
   runs,
@@ -743,23 +856,51 @@ function RunList({
 }) {
   const { C } = useTheme();
   const allSelected = selectedIndices.size === runs.length;
+  const { template, onMouseDown } = useResizableColumns(
+    RUN_COLS.map((c) => c.init),
+  );
+
+  const colStyle = (i: number): React.CSSProperties => ({
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    position: "relative",
+    paddingRight: i < RUN_COLS.length - 1 ? 6 : 0,
+  });
+
+  const handle = (i: number) => (
+    <div
+      onMouseDown={(e) => onMouseDown(i, e)}
+      style={{
+        position: "absolute",
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 5,
+        cursor: "col-resize",
+        zIndex: 1,
+      }}
+      onMouseEnter={(e) => (
+        (e.currentTarget.style.background = C.accent + "44"),
+        (e.currentTarget.style.borderRadius = "1px")
+      )}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+    />
+  );
 
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
+        width: "100%",
         height: "100%",
-        minWidth: 220,
-        width: 240,
-        borderRight: `1px solid ${C.border}`,
-        flexShrink: 0,
       }}
     >
       {/* Header */}
       <div
         style={{
-          padding: "6px 10px",
+          padding: "4px 10px",
           borderBottom: `1px solid ${C.border}`,
           display: "flex",
           alignItems: "center",
@@ -777,45 +918,65 @@ function RunList({
         >
           Runs ({selectedIndices.size}/{runs.length})
         </span>
-        <div style={{ display: "flex", gap: 6 }}>
-          <button
-            onClick={allSelected ? onSelectNone : onSelectAll}
-            style={{
-              background: "none",
-              border: `1px solid ${C.border}`,
-              borderRadius: 3,
-              padding: "1px 6px",
-              cursor: "pointer",
-              color: C.textMid,
-              fontSize: 9,
-              fontFamily: MONO,
-            }}
-          >
-            {allSelected ? "none" : "all"}
-          </button>
-        </div>
+        <button
+          onClick={allSelected ? onSelectNone : onSelectAll}
+          style={{
+            background: "none",
+            border: `1px solid ${C.border}`,
+            borderRadius: 3,
+            padding: "1px 6px",
+            cursor: "pointer",
+            color: C.textMid,
+            fontSize: 9,
+            fontFamily: MONO,
+          }}
+        >
+          {allSelected ? "none" : "all"}
+        </button>
+      </div>
+
+      {/* Column headers */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: template,
+          padding: "3px 10px",
+          fontSize: 8,
+          fontWeight: 700,
+          color: C.textDim,
+          textTransform: "uppercase",
+          letterSpacing: 0.6,
+          borderBottom: `1px solid ${C.border}`,
+        }}
+      >
+        {RUN_COLS.map((col, i) => (
+          <div key={col.key} style={colStyle(i)}>
+            {col.label}
+            {i < RUN_COLS.length - 1 && handle(i)}
+          </div>
+        ))}
       </div>
 
       {/* Run rows */}
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {runs.map((run, i) => {
-          const isSel = selectedIndices.has(i);
+        {runs.map((run, rowIdx) => {
+          const isSel = selectedIndices.has(rowIdx);
           return (
             <div
-              key={i}
-              onClick={() => onToggle(i)}
+              key={rowIdx}
+              onClick={() => onToggle(rowIdx)}
               style={{
-                display: "flex",
+                display: "grid",
+                gridTemplateColumns: template,
+                padding: "3px 10px",
                 alignItems: "center",
-                gap: 6,
-                padding: "4px 10px",
                 cursor: "pointer",
                 background: isSel ? C.accent + "10" : "transparent",
                 borderLeft: isSel
                   ? `2px solid ${C.accent}`
                   : "2px solid transparent",
-                transition: "all 0.08s",
                 fontSize: 10,
+                fontFamily: MONO,
               }}
               onMouseEnter={(e) => {
                 if (!isSel) e.currentTarget.style.background = C.surface2;
@@ -825,58 +986,49 @@ function RunList({
               }}
             >
               {/* Checkbox */}
-              <div
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: 2,
-                  border: `1.5px solid ${isSel ? C.accent : C.border}`,
-                  background: isSel ? C.accent + "33" : "transparent",
-                  flexShrink: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 8,
-                  color: C.accent,
-                }}
-              >
-                {isSel ? "✓" : ""}
+              <div style={colStyle(0)}>
+                <div
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: 2,
+                    border: `1.5px solid ${isSel ? C.accent : C.border}`,
+                    background: isSel ? C.accent + "33" : "transparent",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 8,
+                    color: C.accent,
+                  }}
+                >
+                  {isSel ? "✓" : ""}
+                </div>
               </div>
               {/* User */}
-              <span style={{ color: C.cyan, fontFamily: MONO, minWidth: 40 }}>
-                {run.user}
-              </span>
+              <div style={{ ...colStyle(1), color: C.cyan }}>{run.user}</div>
               {/* Commit */}
-              <span
-                style={{
-                  color: C.pink,
-                  fontFamily: MONO,
-                  fontSize: 9,
-                  minWidth: 48,
-                }}
-              >
+              <div style={{ ...colStyle(2), color: C.pink, fontSize: 9 }}>
                 {run.commit}
-              </span>
+              </div>
               {/* Timestamp */}
-              <span style={{ color: C.textDim, fontFamily: MONO, flex: 1 }}>
+              <div style={{ ...colStyle(3), color: C.textDim }}>
                 {fmtTime(run.timestamp)}
-              </span>
+              </div>
               {/* Build time */}
-              <span style={{ color: C.textMid, fontFamily: MONO }}>
+              <div style={{ ...colStyle(4), color: C.textMid }}>
                 {fmtMs(run.buildTimeMs)}
-              </span>
+              </div>
               {/* Dirty count */}
-              <span
+              <div
                 style={{
+                  ...colStyle(5),
                   color: C.amber,
-                  fontFamily: MONO,
                   fontSize: 9,
-                  minWidth: 16,
                   textAlign: "right",
                 }}
               >
                 {run.dirtyCrates.length}
-              </span>
+              </div>
             </div>
           );
         })}
@@ -1011,6 +1163,8 @@ function Summary({
 function DetailView({ scenario }: { scenario: Scenario }) {
   const { C, heatColor } = useTheme();
   const [threshold, setThreshold] = useState(0);
+  const [runsWidth, setRunsWidth] = useState(280);
+  const [summaryWidth, setSummaryWidth] = useState(190);
   // All runs selected by default
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
     () => new Set(scenario.runs.map((_, i) => i)),
@@ -1168,12 +1322,24 @@ function DetailView({ scenario }: { scenario: Scenario }) {
       {/* Body: runs list | graph | summary */}
       <div style={{ flex: 1, display: "flex", gap: 0, minHeight: 0 }}>
         {/* Run list */}
-        <RunList
-          runs={scenario.runs}
-          selectedIndices={selectedIndices}
-          onToggle={toggleRun}
-          onSelectAll={selectAll}
-          onSelectNone={selectNone}
+        <div
+          style={{
+            width: runsWidth,
+            flexShrink: 0,
+            height: "100%",
+            overflow: "hidden",
+          }}
+        >
+          <RunList
+            runs={scenario.runs}
+            selectedIndices={selectedIndices}
+            onToggle={toggleRun}
+            onSelectAll={selectAll}
+            onSelectNone={selectNone}
+          />
+        </div>
+        <PanelHandle
+          onDrag={(d) => setRunsWidth((w) => Math.max(180, w + d))}
         />
 
         {/* Graph */}
@@ -1226,13 +1392,15 @@ function DetailView({ scenario }: { scenario: Scenario }) {
           </ReactFlow>
         </div>
 
+        <PanelHandle
+          onDrag={(d) => setSummaryWidth((w) => Math.max(140, w - d))}
+        />
         {/* Summary sidebar */}
         <div
           style={{
-            width: 190,
+            width: summaryWidth,
             overflowY: "auto",
             padding: "8px 10px",
-            borderLeft: `1px solid ${C.border}`,
             flexShrink: 0,
           }}
         >
@@ -1258,6 +1426,7 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [userFilter, setUserFilter] = useState<string[]>([]);
   const [profileFilter, setProfileFilter] = useState<string | null>(null);
+  const [listWidth, setListWidth] = useState(380);
 
   const togglePin = useCallback((id: number) => {
     setScenarios((prev) =>
@@ -1368,13 +1537,11 @@ export default function App() {
           {/* Left: command list */}
           <div
             style={{
-              width: selected ? 380 : "100%",
-              minWidth: 340,
+              width: selected ? listWidth : "100%",
+              minWidth: 280,
               flexShrink: 0,
               display: "flex",
               flexDirection: "column",
-              borderRight: selected ? `1px solid ${C.border}` : "none",
-              transition: "width 0.15s ease",
             }}
           >
             {/* Filters */}
@@ -1505,7 +1672,12 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right: detail */}
+          {/* Resize handle + detail */}
+          {selected && (
+            <PanelHandle
+              onDrag={(d) => setListWidth((w) => Math.max(280, w + d))}
+            />
+          )}
           {selected && (
             <div
               style={{

@@ -9,13 +9,6 @@ body,
 #root {
     width: 100%;
     height: 100%;
-    background: #0f0f1a;
-    color: #e2e8f0;
-    font-family:
-        "Inter",
-        system-ui,
-        -apple-system,
-        sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -26,14 +19,24 @@ body,
 }
 
 ::-webkit-scrollbar-track {
-    background: #0f0f1a;
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #2d2d4a;
+    background: rgba(128, 128, 128, 0.25);
     border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #3d3d5c;
+    background: rgba(128, 128, 128, 0.4);
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
 }

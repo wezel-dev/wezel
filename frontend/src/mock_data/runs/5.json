@@ -1,0 +1,74 @@
+[
+  {
+    "user": "dave",
+    "timestamp": "2024-01-15T09:05:00Z",
+    "buildTimeMs": 7850,
+    "dirtyCrates": ["wezel_ui"]
+  },
+  {
+    "user": "carol",
+    "timestamp": "2024-01-15T14:22:00Z",
+    "buildTimeMs": 8410,
+    "dirtyCrates": ["wezel_ui", "api_client", "theme"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-16T08:30:00Z",
+    "buildTimeMs": 8120,
+    "dirtyCrates": ["wezel_ui", "theme"]
+  },
+  {
+    "user": "bob",
+    "timestamp": "2024-01-16T11:45:00Z",
+    "buildTimeMs": 7680,
+    "dirtyCrates": ["wezel_ui", "api_client"]
+  },
+  {
+    "user": "carol",
+    "timestamp": "2024-01-16T16:10:00Z",
+    "buildTimeMs": 9020,
+    "dirtyCrates": ["wezel_ui", "api_client", "proto_gen", "theme"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-17T09:55:00Z",
+    "buildTimeMs": 8340,
+    "dirtyCrates": ["wezel_ui", "theme", "api_client"]
+  },
+  {
+    "user": "alice",
+    "timestamp": "2024-01-17T13:40:00Z",
+    "buildTimeMs": 7920,
+    "dirtyCrates": ["wezel_ui"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-18T10:15:00Z",
+    "buildTimeMs": 8560,
+    "dirtyCrates": ["wezel_ui", "api_client", "proto_gen"]
+  },
+  {
+    "user": "bob",
+    "timestamp": "2024-01-18T15:30:00Z",
+    "buildTimeMs": 8080,
+    "dirtyCrates": ["wezel_ui", "theme"]
+  },
+  {
+    "user": "carol",
+    "timestamp": "2024-01-19T08:50:00Z",
+    "buildTimeMs": 9180,
+    "dirtyCrates": ["wezel_ui", "api_client", "theme", "proto_gen", "serde"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-19T11:20:00Z",
+    "buildTimeMs": 7740,
+    "dirtyCrates": ["wezel_ui"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-19T16:45:00Z",
+    "buildTimeMs": 8290,
+    "dirtyCrates": ["wezel_ui", "api_client"]
+  }
+]

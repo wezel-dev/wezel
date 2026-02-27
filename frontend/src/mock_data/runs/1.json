@@ -1,0 +1,74 @@
+[
+  {
+    "user": "alice",
+    "timestamp": "2024-01-15T08:12:00Z",
+    "buildTimeMs": 4310,
+    "dirtyCrates": ["auth_core", "crypto_utils", "db_pool"]
+  },
+  {
+    "user": "alice",
+    "timestamp": "2024-01-15T10:23:00Z",
+    "buildTimeMs": 4210,
+    "dirtyCrates": ["auth_core", "crypto_utils"]
+  },
+  {
+    "user": "bob",
+    "timestamp": "2024-01-15T14:45:00Z",
+    "buildTimeMs": 4520,
+    "dirtyCrates": ["auth_core", "db_pool", "config"]
+  },
+  {
+    "user": "alice",
+    "timestamp": "2024-01-16T09:05:00Z",
+    "buildTimeMs": 3890,
+    "dirtyCrates": ["auth_core"]
+  },
+  {
+    "user": "carol",
+    "timestamp": "2024-01-16T11:30:00Z",
+    "buildTimeMs": 4680,
+    "dirtyCrates": ["auth_core", "crypto_utils", "db_pool", "config"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-16T16:18:00Z",
+    "buildTimeMs": 4150,
+    "dirtyCrates": ["auth_core", "config"]
+  },
+  {
+    "user": "alice",
+    "timestamp": "2024-01-17T08:47:00Z",
+    "buildTimeMs": 4410,
+    "dirtyCrates": ["auth_core", "crypto_utils"]
+  },
+  {
+    "user": "bob",
+    "timestamp": "2024-01-17T13:22:00Z",
+    "buildTimeMs": 5010,
+    "dirtyCrates": ["auth_core", "crypto_utils", "db_pool", "config", "base64"]
+  },
+  {
+    "user": "alice",
+    "timestamp": "2024-01-18T09:33:00Z",
+    "buildTimeMs": 3950,
+    "dirtyCrates": ["auth_core"]
+  },
+  {
+    "user": "carol",
+    "timestamp": "2024-01-18T15:10:00Z",
+    "buildTimeMs": 4280,
+    "dirtyCrates": ["auth_core", "db_pool"]
+  },
+  {
+    "user": "alice",
+    "timestamp": "2024-01-19T10:02:00Z",
+    "buildTimeMs": 4590,
+    "dirtyCrates": ["auth_core", "crypto_utils", "config"]
+  },
+  {
+    "user": "bob",
+    "timestamp": "2024-01-19T14:55:00Z",
+    "buildTimeMs": 4070,
+    "dirtyCrates": ["auth_core", "crypto_utils"]
+  }
+]

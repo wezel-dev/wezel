@@ -1,0 +1,80 @@
+[
+  {
+    "user": "alice",
+    "timestamp": "2024-01-15T08:12:00Z",
+    "buildTimeMs": 5820,
+    "dirtyCrates": ["pheromone_agent"]
+  },
+  {
+    "user": "alice",
+    "timestamp": "2024-01-15T10:45:00Z",
+    "buildTimeMs": 6290,
+    "dirtyCrates": ["pheromone_agent", "fs_watcher", "ipc"]
+  },
+  {
+    "user": "bob",
+    "timestamp": "2024-01-15T14:22:00Z",
+    "buildTimeMs": 6410,
+    "dirtyCrates": ["pheromone_agent", "cargo_metadata", "fs_watcher"]
+  },
+  {
+    "user": "alice",
+    "timestamp": "2024-01-16T09:05:00Z",
+    "buildTimeMs": 5680,
+    "dirtyCrates": ["pheromone_agent", "ipc"]
+  },
+  {
+    "user": "carol",
+    "timestamp": "2024-01-16T11:33:00Z",
+    "buildTimeMs": 6550,
+    "dirtyCrates": ["pheromone_agent", "fs_watcher", "cargo_metadata", "ipc"]
+  },
+  {
+    "user": "alice",
+    "timestamp": "2024-01-16T16:18:00Z",
+    "buildTimeMs": 5950,
+    "dirtyCrates": ["pheromone_agent", "fs_watcher"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-17T08:40:00Z",
+    "buildTimeMs": 6180,
+    "dirtyCrates": ["pheromone_agent", "cargo_metadata"]
+  },
+  {
+    "user": "alice",
+    "timestamp": "2024-01-17T13:55:00Z",
+    "buildTimeMs": 6720,
+    "dirtyCrates": ["pheromone_agent", "fs_watcher", "ipc", "cargo_metadata", "serde_json"]
+  },
+  {
+    "user": "carol",
+    "timestamp": "2024-01-18T09:28:00Z",
+    "buildTimeMs": 5590,
+    "dirtyCrates": ["pheromone_agent"]
+  },
+  {
+    "user": "alice",
+    "timestamp": "2024-01-18T14:10:00Z",
+    "buildTimeMs": 6050,
+    "dirtyCrates": ["pheromone_agent", "ipc", "serde"]
+  },
+  {
+    "user": "bob",
+    "timestamp": "2024-01-19T10:02:00Z",
+    "buildTimeMs": 6340,
+    "dirtyCrates": ["pheromone_agent", "fs_watcher", "cargo_metadata"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-19T15:47:00Z",
+    "buildTimeMs": 5770,
+    "dirtyCrates": ["pheromone_agent", "ipc"]
+  },
+  {
+    "user": "alice",
+    "timestamp": "2024-01-20T11:30:00Z",
+    "buildTimeMs": 6480,
+    "dirtyCrates": ["pheromone_agent", "fs_watcher", "ipc", "notify"]
+  }
+]

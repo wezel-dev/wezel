@@ -1,26 +1,18 @@
 [
   {
     "name": "proto_gen",
-    "heat": 92,
-    "deps": [
-      "prost",
-      "tonic",
-      "serde"
-    ]
+    "deps": ["prost", "tonic", "serde"]
   },
   {
     "name": "prost",
-    "heat": 10,
     "deps": []
   },
   {
     "name": "tonic",
-    "heat": 12,
     "deps": []
   },
   {
     "name": "serde",
-    "heat": 2,
     "deps": []
   }
 ]

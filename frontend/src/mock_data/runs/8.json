@@ -1,0 +1,68 @@
+[
+  {
+    "user": "dave",
+    "timestamp": "2024-01-15T09:12:00Z",
+    "buildTimeMs": 9800,
+    "dirtyCrates": ["proto_gen"]
+  },
+  {
+    "user": "bob",
+    "timestamp": "2024-01-15T14:45:00Z",
+    "buildTimeMs": 11200,
+    "dirtyCrates": ["proto_gen", "prost"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-16T08:30:00Z",
+    "buildTimeMs": 10600,
+    "dirtyCrates": ["proto_gen"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-16T15:22:00Z",
+    "buildTimeMs": 11800,
+    "dirtyCrates": ["proto_gen", "serde"]
+  },
+  {
+    "user": "bob",
+    "timestamp": "2024-01-17T10:05:00Z",
+    "buildTimeMs": 10400,
+    "dirtyCrates": ["proto_gen"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-17T13:48:00Z",
+    "buildTimeMs": 12100,
+    "dirtyCrates": ["proto_gen", "tonic"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-18T09:55:00Z",
+    "buildTimeMs": 10900,
+    "dirtyCrates": ["proto_gen"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-18T16:10:00Z",
+    "buildTimeMs": 11500,
+    "dirtyCrates": ["proto_gen", "prost"]
+  },
+  {
+    "user": "bob",
+    "timestamp": "2024-01-19T11:30:00Z",
+    "buildTimeMs": 9600,
+    "dirtyCrates": ["proto_gen"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-19T14:02:00Z",
+    "buildTimeMs": 10200,
+    "dirtyCrates": ["proto_gen", "tonic", "prost"]
+  },
+  {
+    "user": "dave",
+    "timestamp": "2024-01-20T10:18:00Z",
+    "buildTimeMs": 11000,
+    "dirtyCrates": ["proto_gen"]
+  }
+]

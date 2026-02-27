@@ -25,29 +25,61 @@ import graph5 from "./mock_data/graphs/5.json";
 import graph6 from "./mock_data/graphs/6.json";
 import graph7 from "./mock_data/graphs/7.json";
 import graph8 from "./mock_data/graphs/8.json";
+import runs1 from "./mock_data/runs/1.json";
+import runs2 from "./mock_data/runs/2.json";
+import runs3 from "./mock_data/runs/3.json";
+import runs4 from "./mock_data/runs/4.json";
+import runs5 from "./mock_data/runs/5.json";
+import runs6 from "./mock_data/runs/6.json";
+import runs7 from "./mock_data/runs/7.json";
+import runs8 from "./mock_data/runs/8.json";
 
 // ── Data model ───────────────────────────────────────────────────────────────
 
-interface CrateNode {
+interface CrateTopo {
   name: string;
-  heat: number; // 0–100
   deps: string[];
+}
+
+interface Run {
+  user: string;
+  timestamp: string;
+  buildTimeMs: number;
+  dirtyCrates: string[];
 }
 
 interface Scenario {
   id: number;
   name: string;
   profile: "dev" | "release";
-  /** Per-user execution counts — aggregated for display */
-  userFreqs: Record<string, number>;
   pinned: boolean;
-  avgBuildMs: number;
-  llvmLines: number;
-  cratesInGraph: number;
-  crateGraph: CrateNode[];
+  graph: CrateTopo[];
+  runs: Run[];
 }
 
-// ── Heat color scale ─────────────────────────────────────────────────────────
+// ── Heat computation ─────────────────────────────────────────────────────────
+
+/** Given a set of runs and the full crate list, compute heat per crate (0–100) */
+function computeHeat(
+  runs: Run[],
+  crateNames: string[],
+): Record<string, number> {
+  if (runs.length === 0) {
+    return Object.fromEntries(crateNames.map((n) => [n, 0]));
+  }
+  const counts: Record<string, number> = {};
+  for (const name of crateNames) counts[name] = 0;
+  for (const run of runs) {
+    for (const c of run.dirtyCrates) {
+      if (c in counts) counts[c]++;
+    }
+  }
+  const result: Record<string, number> = {};
+  for (const name of crateNames) {
+    result[name] = Math.round((counts[name] / runs.length) * 100);
+  }
+  return result;
+}
 
 function heatColor(heat: number): { border: string; bg: string; text: string } {
   if (heat >= 80) return { border: "#ef4444", bg: "#3b1118", text: "#fca5a5" };
@@ -61,7 +93,7 @@ function heatColor(heat: number): { border: string; bg: string; text: string } {
 
 const USERS: string[] = usersData;
 
-const graphsById: Record<number, CrateNode[]> = {
+const graphsById: Record<number, CrateTopo[]> = {
   1: graph1,
   2: graph2,
   3: graph3,
@@ -71,12 +103,28 @@ const graphsById: Record<number, CrateNode[]> = {
   7: graph7,
   8: graph8,
 };
+const runsById: Record<number, Run[]> = {
+  1: runs1 as Run[],
+  2: runs2 as Run[],
+  3: runs3 as Run[],
+  4: runs4 as Run[],
+  5: runs5 as Run[],
+  6: runs6 as Run[],
+  7: runs7 as Run[],
+  8: runs8 as Run[],
+};
 
 const MOCK_SCENARIOS: Scenario[] = (
-  scenariosData as Omit<Scenario, "crateGraph">[]
+  scenariosData as {
+    id: number;
+    name: string;
+    profile: "dev" | "release";
+    pinned: boolean;
+  }[]
 ).map((s) => ({
   ...s,
-  crateGraph: graphsById[s.id] ?? [],
+  graph: graphsById[s.id] ?? [],
+  runs: runsById[s.id] ?? [],
 }));
 
 // ── Theme ────────────────────────────────────────────────────────────────────
@@ -109,25 +157,39 @@ function fmtMs(ms: number): string {
   return `${ms}ms`;
 }
 
-function fmtCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return `${n}`;
+function fmtTime(ts: string): string {
+  const d = new Date(ts);
+  const mon = (d.getMonth() + 1).toString().padStart(2, "0");
+  const day = d.getDate().toString().padStart(2, "0");
+  const h = d.getHours().toString().padStart(2, "0");
+  const m = d.getMinutes().toString().padStart(2, "0");
+  return `${mon}/${day} ${h}:${m}`;
 }
 
 // ── Graph layout ─────────────────────────────────────────────────────────────
 
-function layoutGraph(crateGraph: CrateNode[]): {
-  nodes: Node[];
-  edges: Edge[];
-} {
+interface LayoutNode {
+  name: string;
+  deps: string[];
+  heat: number;
+}
+
+function layoutGraph(
+  topo: CrateTopo[],
+  heat: Record<string, number>,
+): { nodes: Node[]; edges: Edge[] } {
+  const items: LayoutNode[] = topo.map((c) => ({
+    ...c,
+    heat: heat[c.name] ?? 0,
+  }));
+
   const nameToIdx = new Map<string, number>();
-  crateGraph.forEach((c, i) => nameToIdx.set(c.name, i));
+  items.forEach((c, i) => nameToIdx.set(c.name, i));
 
   const depths = new Map<string, number>();
   function getDepth(name: string): number {
     if (depths.has(name)) return depths.get(name)!;
-    const node = crateGraph.find((c) => c.name === name);
+    const node = items.find((c) => c.name === name);
     if (!node || node.deps.length === 0) {
       depths.set(name, 0);
       return 0;
@@ -140,11 +202,11 @@ function layoutGraph(crateGraph: CrateNode[]): {
     depths.set(name, d);
     return d;
   }
-  crateGraph.forEach((c) => getDepth(c.name));
+  items.forEach((c) => getDepth(c.name));
 
   const maxDepth = Math.max(...Array.from(depths.values()), 0);
   const layers: string[][] = Array.from({ length: maxDepth + 1 }, () => []);
-  crateGraph.forEach((c) => {
+  items.forEach((c) => {
     layers[maxDepth - (depths.get(c.name) ?? 0)].push(c.name);
   });
 
@@ -158,18 +220,18 @@ function layoutGraph(crateGraph: CrateNode[]): {
   layers.forEach((layer, ly) => {
     const w = layer.length * NW + (layer.length - 1) * GX;
     layer.forEach((name, ci) => {
-      const crate = crateGraph.find((c) => c.name === name)!;
-      const colors = heatColor(crate.heat);
+      const item = items.find((c) => c.name === name)!;
+      const colors = heatColor(item.heat);
       nodes.push({
         id: name,
         type: "crate",
         position: { x: -w / 2 + ci * (NW + GX), y: ly * (NH + GY) },
-        data: { label: name, heat: crate.heat, colors },
+        data: { label: name, heat: item.heat, colors },
       });
     });
   });
 
-  crateGraph.forEach((crate) => {
+  items.forEach((crate) => {
     crate.deps.forEach((dep) => {
       if (nameToIdx.has(dep)) {
         const col = heatColor(crate.heat);
@@ -255,8 +317,9 @@ const nodeTypes = { crate: CrateNodeComponent };
 
 // ── Small components ─────────────────────────────────────────────────────────
 
-function FreqBar({ value }: { value: number }) {
-  const col = value >= 70 ? C.red : value >= 40 ? C.amber : C.accent;
+function FreqBar({ value, max }: { value: number; max: number }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  const col = pct >= 70 ? C.red : pct >= 40 ? C.amber : C.accent;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
       <div
@@ -270,7 +333,7 @@ function FreqBar({ value }: { value: number }) {
       >
         <div
           style={{
-            width: `${value}%`,
+            width: `${pct}%`,
             height: "100%",
             background: col,
             borderRadius: 2,
@@ -551,50 +614,204 @@ function HeatLegend() {
   );
 }
 
-// ── Summary panel (right of graph) ───────────────────────────────────────────
+// ── Run list (left panel inside detail view) ─────────────────────────────────
 
-function Summary({
-  scenario,
-  frequency,
+function RunList({
+  runs,
+  selectedIndices,
+  onToggle,
+  onSelectAll,
+  onSelectNone,
 }: {
-  scenario: Scenario;
-  frequency: number;
+  runs: Run[];
+  selectedIndices: Set<number>;
+  onToggle: (i: number) => void;
+  onSelectAll: () => void;
+  onSelectNone: () => void;
 }) {
-  const hotCrates = [...scenario.crateGraph]
-    .sort((a, b) => b.heat - a.heat)
-    .slice(0, 6);
+  const allSelected = selectedIndices.size === runs.length;
 
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 14,
+        height: "100%",
+        minWidth: 220,
+        width: 240,
+        borderRight: `1px solid ${C.border}`,
+        flexShrink: 0,
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: "6px 10px",
+          borderBottom: `1px solid ${C.border}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <span
+          style={{
+            fontSize: 9,
+            fontWeight: 700,
+            color: C.textDim,
+            letterSpacing: 0.8,
+            textTransform: "uppercase",
+          }}
+        >
+          Runs ({selectedIndices.size}/{runs.length})
+        </span>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button
+            onClick={allSelected ? onSelectNone : onSelectAll}
+            style={{
+              background: "none",
+              border: `1px solid ${C.border}`,
+              borderRadius: 3,
+              padding: "1px 6px",
+              cursor: "pointer",
+              color: C.textMid,
+              fontSize: 9,
+              fontFamily: MONO,
+            }}
+          >
+            {allSelected ? "none" : "all"}
+          </button>
+        </div>
+      </div>
+
+      {/* Run rows */}
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        {runs.map((run, i) => {
+          const isSel = selectedIndices.has(i);
+          return (
+            <div
+              key={i}
+              onClick={() => onToggle(i)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 10px",
+                cursor: "pointer",
+                background: isSel ? C.accent + "10" : "transparent",
+                borderLeft: isSel
+                  ? `2px solid ${C.accent}`
+                  : "2px solid transparent",
+                transition: "all 0.08s",
+                fontSize: 10,
+              }}
+              onMouseEnter={(e) => {
+                if (!isSel) e.currentTarget.style.background = C.surface2;
+              }}
+              onMouseLeave={(e) => {
+                if (!isSel) e.currentTarget.style.background = "transparent";
+              }}
+            >
+              {/* Checkbox */}
+              <div
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: 2,
+                  border: `1.5px solid ${isSel ? C.accent : C.border}`,
+                  background: isSel ? C.accent + "33" : "transparent",
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 8,
+                  color: C.accent,
+                }}
+              >
+                {isSel ? "✓" : ""}
+              </div>
+              {/* User */}
+              <span style={{ color: C.cyan, fontFamily: MONO, minWidth: 40 }}>
+                {run.user}
+              </span>
+              {/* Timestamp */}
+              <span style={{ color: C.textDim, fontFamily: MONO, flex: 1 }}>
+                {fmtTime(run.timestamp)}
+              </span>
+              {/* Build time */}
+              <span style={{ color: C.textMid, fontFamily: MONO }}>
+                {fmtMs(run.buildTimeMs)}
+              </span>
+              {/* Dirty count */}
+              <span
+                style={{
+                  color: C.amber,
+                  fontFamily: MONO,
+                  fontSize: 9,
+                  minWidth: 16,
+                  textAlign: "right",
+                }}
+              >
+                {run.dirtyCrates.length}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Summary panel ────────────────────────────────────────────────────────────
+
+function Summary({
+  scenario,
+  selectedRuns,
+  heat,
+}: {
+  scenario: Scenario;
+  selectedRuns: Run[];
+  heat: Record<string, number>;
+}) {
+  const crateNames = scenario.graph.map((c) => c.name);
+  const hotCrates = crateNames
+    .map((n) => ({ name: n, heat: heat[n] ?? 0 }))
+    .sort((a, b) => b.heat - a.heat)
+    .slice(0, 8);
+
+  const avgBuild =
+    selectedRuns.length > 0
+      ? Math.round(
+          selectedRuns.reduce((s, r) => s + r.buildTimeMs, 0) /
+            selectedRuns.length,
+        )
+      : 0;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
         fontSize: 11,
-        minWidth: 180,
+        minWidth: 170,
       }}
     >
       {/* Metrics */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <Stat
           label="Avg build"
-          value={fmtMs(scenario.avgBuildMs)}
+          value={selectedRuns.length > 0 ? fmtMs(avgBuild) : "—"}
           color={C.amber}
         />
         <Stat
-          label="LLVM lines"
-          value={fmtCount(scenario.llvmLines)}
-          color={C.cyan}
+          label="Runs selected"
+          value={`${selectedRuns.length}/${scenario.runs.length}`}
+          color={C.accent}
         />
         <Stat
-          label="Crates"
-          value={`${scenario.cratesInGraph}`}
+          label="Crates in graph"
+          value={`${scenario.graph.length}`}
           color={C.pink}
-        />
-        <Stat
-          label="Frequency"
-          value={`${frequency}`}
-          color={frequency >= 70 ? C.red : C.accent}
         />
       </div>
 
@@ -612,7 +829,7 @@ function Summary({
             marginBottom: 6,
           }}
         >
-          Hottest crates
+          Rebuild frequency
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {hotCrates.map((c) => {
@@ -664,18 +881,49 @@ function Summary({
   );
 }
 
-// ── Detail view: graph + summary ─────────────────────────────────────────────
+// ── Detail view ──────────────────────────────────────────────────────────────
 
-function DetailView({
-  scenario,
-  frequency,
-}: {
-  scenario: Scenario;
-  frequency: number;
-}) {
+function DetailView({ scenario }: { scenario: Scenario }) {
+  // All runs selected by default
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
+    () => new Set(scenario.runs.map((_, i) => i)),
+  );
+
+  const toggleRun = useCallback((i: number) => {
+    setSelectedIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  }, []);
+
+  const selectAll = useCallback(() => {
+    setSelectedIndices(new Set(scenario.runs.map((_, i) => i)));
+  }, [scenario.runs]);
+
+  const selectNone = useCallback(() => {
+    setSelectedIndices(new Set());
+  }, []);
+
+  const selectedRuns = useMemo(
+    () => scenario.runs.filter((_, i) => selectedIndices.has(i)),
+    [scenario.runs, selectedIndices],
+  );
+
+  const crateNames = useMemo(
+    () => scenario.graph.map((c) => c.name),
+    [scenario.graph],
+  );
+
+  const heat = useMemo(
+    () => computeHeat(selectedRuns, crateNames),
+    [selectedRuns, crateNames],
+  );
+
   const { nodes, edges } = useMemo(
-    () => layoutGraph(scenario.crateGraph),
-    [scenario.id], // eslint-disable-line react-hooks/exhaustive-deps
+    () => layoutGraph(scenario.graph, heat),
+    [scenario.graph, heat],
   );
 
   return (
@@ -695,6 +943,7 @@ function DetailView({
           justifyContent: "space-between",
           gap: 12,
           flexWrap: "wrap",
+          flexShrink: 0,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -714,7 +963,6 @@ function DetailView({
           >
             {scenario.profile}
           </Badge>
-
           {scenario.pinned && (
             <span style={{ fontSize: 10, color: C.accent }}>📌 tracked</span>
           )}
@@ -722,14 +970,22 @@ function DetailView({
         <HeatLegend />
       </div>
 
-      {/* Graph + Summary */}
-      <div style={{ flex: 1, display: "flex", gap: 12, minHeight: 0 }}>
+      {/* Body: runs list | graph | summary */}
+      <div style={{ flex: 1, display: "flex", gap: 0, minHeight: 0 }}>
+        {/* Run list */}
+        <RunList
+          runs={scenario.runs}
+          selectedIndices={selectedIndices}
+          onToggle={toggleRun}
+          onSelectAll={selectAll}
+          onSelectNone={selectNone}
+        />
+
         {/* Graph */}
         <div
           style={{
             flex: 1,
-            borderRadius: 6,
-            border: `1px solid ${C.border}`,
+            borderRadius: 0,
             overflow: "hidden",
             background: C.bg,
           }}
@@ -774,17 +1030,22 @@ function DetailView({
             />
           </ReactFlow>
         </div>
+
         {/* Summary sidebar */}
         <div
           style={{
-            width: 200,
+            width: 190,
             overflowY: "auto",
-            padding: "8px 4px",
+            padding: "8px 10px",
             borderLeft: `1px solid ${C.border}`,
-            paddingLeft: 12,
+            flexShrink: 0,
           }}
         >
-          <Summary scenario={scenario} frequency={frequency} />
+          <Summary
+            scenario={scenario}
+            selectedRuns={selectedRuns}
+            heat={heat}
+          />
         </div>
       </div>
     </div>
@@ -806,11 +1067,11 @@ export default function App() {
     );
   }, []);
 
+  /** Count runs matching user filter for a scenario */
   const getFreq = useCallback(
     (s: Scenario) => {
-      if (userFilter.length === 0)
-        return Object.values(s.userFreqs).reduce((a, b) => a + b, 0);
-      return userFilter.reduce((sum, u) => sum + (s.userFreqs[u] ?? 0), 0);
+      if (userFilter.length === 0) return s.runs.length;
+      return s.runs.filter((r) => userFilter.includes(r.user)).length;
     },
     [userFilter],
   );
@@ -825,6 +1086,11 @@ export default function App() {
     list.sort((a, b) => getFreq(b) - getFreq(a));
     return list;
   }, [scenarios, search, profileFilter, getFreq]);
+
+  const maxFreq = useMemo(
+    () => Math.max(...filtered.map(getFreq), 1),
+    [filtered, getFreq],
+  );
 
   const selected =
     selectedId != null
@@ -926,7 +1192,7 @@ export default function App() {
           >
             <span>Command</span>
             <span>Prof.</span>
-            <span>Freq</span>
+            <span>Runs</span>
             <span style={{ textAlign: "center" }}>Track</span>
           </div>
 
@@ -946,6 +1212,7 @@ export default function App() {
             )}
             {filtered.map((s) => {
               const isSel = s.id === selectedId;
+              const freq = getFreq(s);
               return (
                 <div
                   key={s.id}
@@ -991,7 +1258,7 @@ export default function App() {
                   >
                     {s.profile === "dev" ? "dev" : "rel"}
                   </Badge>
-                  <FreqBar value={getFreq(s)} />
+                  <FreqBar value={freq} max={maxFreq} />
                   <div style={{ display: "flex", justifyContent: "center" }}>
                     <button
                       onClick={(e) => {
@@ -1027,11 +1294,7 @@ export default function App() {
               background: C.bg,
             }}
           >
-            <DetailView
-              key={selected.id}
-              scenario={selected}
-              frequency={getFreq(selected)}
-            />
+            <DetailView key={selected.id} scenario={selected} />
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@ import {
   useCallback,
   useMemo,
   useRef,
+  useEffect,
   createContext,
   useContext,
 } from "react";
@@ -11,11 +12,12 @@ import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   Handle,
   Position,
   BackgroundVariant,
   MarkerType,
+  useReactFlow,
+  ReactFlowProvider,
   type Node,
   type Edge,
   type NodeProps,
@@ -423,6 +425,72 @@ function CrateNodeComponent({ data }: NodeProps) {
 }
 
 const nodeTypes = { crate: CrateNodeComponent };
+
+// ── Graph wrapper that re-fits on resize ─────────────────────────────────────
+
+function FitViewOnResize() {
+  const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    // Find the ReactFlow wrapper
+    const el = document.querySelector(".react-flow") as HTMLElement | null;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      fitView({ padding: 0.25, duration: 150 });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [fitView]);
+
+  return null;
+}
+
+function FitViewGraph({
+  nodes,
+  edges,
+  nodeTypes: nt,
+  colorMode,
+  bg,
+  surface,
+  border,
+}: {
+  nodes: Node[];
+  edges: Edge[];
+  nodeTypes: Record<string, React.ComponentType<NodeProps>>;
+  colorMode: "light" | "dark";
+  bg: string;
+  surface: string;
+  border: string;
+}) {
+  return (
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      nodeTypes={nt}
+      fitView
+      fitViewOptions={{ padding: 0.25 }}
+      colorMode={colorMode}
+      minZoom={0.3}
+      maxZoom={2}
+      proOptions={{ hideAttribution: true }}
+    >
+      <FitViewOnResize />
+      <Background
+        variant={BackgroundVariant.Dots}
+        gap={16}
+        size={1}
+        color={bg}
+      />
+      <Controls
+        style={{
+          background: surface,
+          borderRadius: 4,
+          border: `1px solid ${border}`,
+        }}
+      />
+    </ReactFlow>
+  );
+}
 
 // ── Small components ─────────────────────────────────────────────────────────
 
@@ -1351,45 +1419,17 @@ function DetailView({ scenario }: { scenario: Scenario }) {
             background: C.bg,
           }}
         >
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            fitView
-            fitViewOptions={{ padding: 0.25 }}
-            colorMode={heatColor === lightHeat ? "light" : "dark"}
-            minZoom={0.3}
-            maxZoom={2}
-            proOptions={{ hideAttribution: true }}
-          >
-            <Background
-              variant={BackgroundVariant.Dots}
-              gap={16}
-              size={1}
-              color={C.surface2}
+          <ReactFlowProvider>
+            <FitViewGraph
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={nodeTypes}
+              colorMode={heatColor === lightHeat ? "light" : "dark"}
+              bg={C.surface2}
+              surface={C.surface}
+              border={C.border}
             />
-            <Controls
-              style={{
-                background: C.surface,
-                borderRadius: 4,
-                border: `1px solid ${C.border}`,
-              }}
-            />
-            <MiniMap
-              nodeColor={(n) => {
-                const c = (n.data as { colors?: { border: string } })?.colors;
-                return c?.border ?? C.accent;
-              }}
-              maskColor="rgba(0,0,0,0.75)"
-              style={{
-                background: C.bg,
-                border: `1px solid ${C.border}`,
-                borderRadius: 4,
-                height: 80,
-                width: 120,
-              }}
-            />
-          </ReactFlow>
+          </ReactFlowProvider>
         </div>
 
         <PanelHandle

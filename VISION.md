@@ -1,0 +1,29 @@
+## Wezel vision doc
+The reality:
+1. Companies do not care about builds - they care about their product.
+2. They do not want to hire build experts or spend time refactoring their build system.
+3. When they do spend time on optimizing the build system, they want to see the gains.
+4. Those gains are elusive - builds cannot be "refactored". They rot quickly, because the quality of a build graph is neither a primary
+  concern nor an easy one to maintain.
+5. It is not easy to tell at a glance what the impact of a code change is on the build graph. As engineers, we focus on systems correctness and not on build performance. We do not have necessary tools to care about them, and there is no way to prevent future regressions.
+
+
+Wezel slides into that reality by helping keep your hand on a pulse. It's a suite of tools for tracking the health of your build. It is out of your way, lightweight and uncompromising. Yet, it will ring the bells the moment
+your dev experience regresses. It let's you introspect your code and how it corresponds to the impact on a total build time.
+
+
+### Measures
+
+The ultimate measure of a build is *time*. Time measurements are not deterministic. They are the ground truth though, so we need to use all the tools at our disposal to correllate a change in build time with the change in code or infrastructure.
+We need to combine time measurements (volatile) with the data we can collect from a build graph (non-volatile). An example of non-volatile measurement is `cargo llvm-lines`. It does not change based on which crate you're rebuilding from and such. It depends on the build profile (dev vs release).
+
+Non-volatile measures can be gathered as an asynchronous CI step (since it doesn't matter who runs the build, the data *must* be the same). The volatile measures will be gathered locally. They are dependent on the machine (cores, mostly) and the state of the codebase.
+
+### Wezel's approach
+Wezel places emphasis on highlighting the scenarios that get executed the most often. It associates *builds* with their *scenarios* (what code gets built - tests/non tests) and *configurations* (how it is built). 
+
+There are three faces to Wezel:
+- Ligthweight agent running locally (Pheromone) - that identifies what code-changes developers make locally. 
+- The dashboard (Anthill), showcasing which scenarios get executed the most often. It lets the user make the decision as to which scenarios should be tracked by..
+- The asynchronous scenario executor (provided by the client) named Forager. It runs the scenarios and gathers the measures (both volatile and non-volatile ones). 
+

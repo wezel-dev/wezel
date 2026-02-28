@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { api, type Overview, type ScenarioSummary } from "./api";
+import { useProject } from "./useProject";
+import type { Overview, ScenarioSummary } from "./api";
 import type { Scenario, ForagerCommit } from "./data";
 
 const EMPTY_SCENARIOS: ScenarioSummary[] = [];
@@ -48,28 +49,37 @@ function useAsync<T>(
 }
 
 export function useOverview() {
-  const { data, loading, error } = useAsync(() => api.overview(), []);
+  const { pApi, current } = useProject();
+  const { data, loading, error } = useAsync(
+    () => pApi.overview(),
+    [current?.id],
+  );
   return { overview: data ?? EMPTY_OVERVIEW, loading, error };
 }
 
 export function useScenarios() {
-  const { data, loading, error, refetch } = useAsync(() => api.scenarios(), []);
+  const { pApi, current } = useProject();
+  const { data, loading, error, refetch } = useAsync(
+    () => pApi.scenarios(),
+    [current?.id],
+  );
 
   const togglePin = useCallback(
     async (id: number) => {
-      await api.togglePin(id);
+      await pApi.togglePin(id);
       refetch();
     },
-    [refetch],
+    [pApi, refetch],
   );
 
   return { scenarios: data ?? EMPTY_SCENARIOS, loading, error, togglePin };
 }
 
 export function useScenario(id: number | null) {
+  const { pApi, current } = useProject();
   const { data, loading, error } = useAsync(
-    () => (id != null ? api.scenario(id) : Promise.reject("no id")),
-    [id],
+    () => (id != null ? pApi.scenario(id) : Promise.reject("no id")),
+    [id, current?.id],
   );
   return {
     scenario: data as Scenario | null,
@@ -79,7 +89,8 @@ export function useScenario(id: number | null) {
 }
 
 export function useCommits() {
-  const result = useAsync(() => api.commits(), []);
+  const { pApi, current } = useProject();
+  const result = useAsync(() => pApi.commits(), [current?.id]);
   return {
     commits: result.data ?? EMPTY_COMMITS,
     loading: result.loading,
@@ -88,14 +99,16 @@ export function useCommits() {
 }
 
 export function useCommit(sha: string | undefined) {
+  const { pApi, current } = useProject();
   return useAsync(
-    () => (sha ? api.commit(sha) : Promise.reject("no sha")),
-    [sha],
+    () => (sha ? pApi.commit(sha) : Promise.reject("no sha")),
+    [sha, current?.id],
   );
 }
 
 export function useUsers() {
-  const result = useAsync(() => api.users(), []);
+  const { pApi, current } = useProject();
+  const result = useAsync(() => pApi.users(), [current?.id]);
   return {
     users: result.data ?? EMPTY_USERS,
     loading: result.loading,

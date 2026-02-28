@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Workflow, GitCommit } from "lucide-react";
+import { Workflow, GitCommit, ChevronDown } from "lucide-react";
 import { ThemeCtx, THEMES, THEME_ORDER, type ThemeKey } from "./lib/theme";
 import { MONO, SANS } from "./lib/format";
 import { useOverview } from "./lib/hooks";
+import { useProject } from "./lib/useProject";
 
 export default function Shell() {
   const [themeKey, setThemeKey] = useState<ThemeKey>(
@@ -19,6 +20,20 @@ export default function Shell() {
   const theme = THEMES[themeKey];
   const C = theme.C;
   const location = useLocation();
+
+  const { projects, current, setCurrent } = useProject();
+  const [projectOpen, setProjectOpen] = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!projectOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node))
+        setProjectOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [projectOpen]);
 
   const { overview } = useOverview();
   const onCommitPage = location.pathname.startsWith("/commit");
@@ -72,6 +87,80 @@ export default function Shell() {
                 wezel
               </span>
             </Link>
+            <div style={{ width: 1, height: 16, background: C.border }} />
+            {/* ── Project switcher ── */}
+            <div ref={dropRef} style={{ position: "relative" }}>
+              <button
+                onClick={() => setProjectOpen((o) => !o)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontFamily: MONO,
+                  fontWeight: 600,
+                  color: C.text,
+                  padding: "2px 6px",
+                  borderRadius: 4,
+                }}
+              >
+                {current?.name ?? "…"}
+                <ChevronDown size={12} color={C.textDim} />
+              </button>
+              {projectOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 4px)",
+                    left: 0,
+                    background: C.surface,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 6,
+                    padding: "4px 0",
+                    zIndex: 100,
+                    minWidth: 200,
+                    boxShadow: "0 4px 12px rgba(0,0,0,.3)",
+                  }}
+                >
+                  {projects.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        setCurrent(p);
+                        setProjectOpen(false);
+                      }}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        textAlign: "left",
+                        background:
+                          p.id === current?.id ? C.surface2 : "transparent",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "6px 12px",
+                        color: p.id === current?.id ? C.accent : C.text,
+                        fontFamily: MONO,
+                        fontSize: 12,
+                      }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{p.name}</div>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: C.textDim,
+                          marginTop: 1,
+                        }}
+                      >
+                        {p.upstream}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div style={{ width: 1, height: 16, background: C.border }} />
             <Link
               to="/"

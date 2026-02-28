@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "name": "wezel",
+    "upstream": "github.com/wezel-dev/wezel"
+  },
+  {
+    "id": 2,
+    "name": "auth-service",
+    "upstream": "github.com/wezel-dev/auth-service"
+  },
+  {
+    "id": 3,
+    "name": "data-pipeline",
+    "upstream": "github.com/wezel-dev/data-pipeline"
+  }
+]

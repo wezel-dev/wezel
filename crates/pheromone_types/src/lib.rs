@@ -4,6 +4,21 @@
 
 use serde::{Deserialize, Serialize};
 
+// ── Project ──────────────────────────────────────────────────────────────────
+
+/// A project, identified across machines by its upstream (git remote) URL.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Project {
+    pub id: u64,
+    /// Human-readable name, e.g. "wezel" (derived from the repo name).
+    pub name: String,
+    /// Canonical upstream URL (e.g. "github.com/wezel-dev/wezel").
+    /// Stripped of protocol and `.git` suffix so that SSH and HTTPS
+    /// remotes resolve to the same identity.
+    pub upstream: String,
+}
+
 // ── Dependency graph ─────────────────────────────────────────────────────────
 
 /// A crate and its direct dependencies, forming one node in the build graph.

@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { ProjectProvider } from "./lib/ProjectContext";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Shell from "./Shell";
 
@@ -50,5 +51,9 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <ProjectProvider>
+      <RouterProvider router={router} />
+    </ProjectProvider>
+  );
 }

@@ -15,6 +15,7 @@ use tower_http::trace::TraceLayer;
 static SCENARIOS_JSON: &str = include_str!("../data/scenarios.json");
 static COMMITS_JSON: &str = include_str!("../data/commits.json");
 static USERS_JSON: &str = include_str!("../data/users.json");
+static PROJECTS_JSON: &str = include_str!("../data/projects.json");
 
 static GRAPHS: [&str; 8] = [
     include_str!("../data/graphs/1.json"),
@@ -89,6 +90,17 @@ async fn get_scenario(
     Path(id): Path<u64>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
+    get_scenario_inner(id, state).await
+}
+
+async fn get_scenario_p(
+    Path((_pid, id)): Path<(u64, u64)>,
+    State(state): State<AppState>,
+) -> Result<Json<Value>, StatusCode> {
+    get_scenario_inner(id, state).await
+}
+
+async fn get_scenario_inner(id: u64, state: AppState) -> Result<Json<Value>, StatusCode> {
     let scenarios = state.read().await;
     scenarios
         .iter()
@@ -104,6 +116,14 @@ async fn get_commits() -> Json<Value> {
 }
 
 async fn get_commit(Path(sha): Path<String>) -> Result<Json<Value>, StatusCode> {
+    get_commit_inner(sha)
+}
+
+async fn get_commit_p(Path((_pid, sha)): Path<(u64, String)>) -> Result<Json<Value>, StatusCode> {
+    get_commit_inner(sha)
+}
+
+fn get_commit_inner(sha: String) -> Result<Json<Value>, StatusCode> {
     let commits: Vec<Value> = serde_json::from_str(COMMITS_JSON).expect("invalid commits.json");
     commits
         .into_iter()
@@ -117,10 +137,26 @@ async fn get_users() -> Json<Value> {
     Json(users)
 }
 
+async fn get_projects() -> Json<Value> {
+    let projects: Value = serde_json::from_str(PROJECTS_JSON).expect("invalid projects.json");
+    Json(projects)
+}
+
 async fn toggle_pin(
     Path(id): Path<u64>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
+    toggle_pin_inner(id, state).await
+}
+
+async fn toggle_pin_p(
+    Path((_pid, id)): Path<(u64, u64)>,
+    State(state): State<AppState>,
+) -> Result<Json<Value>, StatusCode> {
+    toggle_pin_inner(id, state).await
+}
+
+async fn toggle_pin_inner(id: u64, state: AppState) -> Result<Json<Value>, StatusCode> {
     let mut scenarios = state.write().await;
     let scenario = scenarios
         .iter_mut()
@@ -141,6 +177,25 @@ async fn main() {
     let state: AppState = Arc::new(RwLock::new(assemble_scenarios()));
 
     let app = Router::new()
+        .route("/api/projects", get(get_projects))
+        // Project-scoped routes (tuple extractors)
+        .route("/api/projects/{project_id}/overview", get(get_overview))
+        .route("/api/projects/{project_id}/scenarios", get(get_scenarios))
+        .route(
+            "/api/projects/{project_id}/scenarios/{id}",
+            get(get_scenario_p),
+        )
+        .route(
+            "/api/projects/{project_id}/scenarios/{id}/pin",
+            patch(toggle_pin_p),
+        )
+        .route("/api/projects/{project_id}/commits", get(get_commits))
+        .route(
+            "/api/projects/{project_id}/commits/{sha}",
+            get(get_commit_p),
+        )
+        .route("/api/projects/{project_id}/users", get(get_users))
+        // Legacy unscoped routes
         .route("/api/overview", get(get_overview))
         .route("/api/scenarios", get(get_scenarios))
         .route("/api/scenarios/{id}", get(get_scenario))

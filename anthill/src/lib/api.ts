@@ -1,4 +1,4 @@
-import type { Scenario, ForagerCommit } from "./data";
+import type { Scenario, ForagerCommit, Project } from "./data";
 
 export interface Overview {
   scenarioCount: number;
@@ -28,12 +28,22 @@ async function patch<T>(path: string, body?: unknown): Promise<T> {
   return res.json();
 }
 
+function projectApi(projectId: number) {
+  const p = `/api/projects/${projectId}`;
+  return {
+    overview: () => get<Overview>(`${p}/overview`),
+    scenarios: () => get<ScenarioSummary[]>(`${p}/scenarios`),
+    scenario: (id: number) => get<Scenario>(`${p}/scenarios/${id}`),
+    togglePin: (id: number) => patch<Scenario>(`${p}/scenarios/${id}/pin`),
+    commits: () => get<ForagerCommit[]>(`${p}/commits`),
+    commit: (sha: string) => get<ForagerCommit>(`${p}/commits/${sha}`),
+    users: () => get<string[]>(`${p}/users`),
+  };
+}
+
+export type ProjectApi = ReturnType<typeof projectApi>;
+
 export const api = {
-  overview: () => get<Overview>("/api/overview"),
-  scenarios: () => get<ScenarioSummary[]>("/api/scenarios"),
-  scenario: (id: number) => get<Scenario>(`/api/scenarios/${id}`),
-  togglePin: (id: number) => patch<Scenario>(`/api/scenarios/${id}/pin`),
-  commits: () => get<ForagerCommit[]>("/api/commits"),
-  commit: (sha: string) => get<ForagerCommit>(`/api/commits/${sha}`),
-  users: () => get<string[]>("/api/users"),
+  projects: () => get<Project[]>("/api/projects"),
+  forProject: projectApi,
 };

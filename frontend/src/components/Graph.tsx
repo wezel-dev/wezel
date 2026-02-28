@@ -194,6 +194,7 @@ export function FitViewGraph({
   bg,
   surface,
   border,
+  onNodeClick,
 }: {
   nodes: Node[];
   edges: Edge[];
@@ -201,6 +202,7 @@ export function FitViewGraph({
   bg: string;
   surface: string;
   border: string;
+  onNodeClick?: (crateName: string) => void;
 }) {
   return (
     <ReactFlowProvider>
@@ -208,6 +210,9 @@ export function FitViewGraph({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onNodeClick={
+          onNodeClick ? (_event, node) => onNodeClick(node.id) : undefined
+        }
         fitView
         fitViewOptions={{ padding: 0.25 }}
         colorMode={colorMode}

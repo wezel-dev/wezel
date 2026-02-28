@@ -129,9 +129,7 @@ export default function ScenariosPage() {
             return (
               <div
                 key={s.id}
-                onClick={() =>
-                  navigate(isSel ? "/" : `/scenario/${s.id}`)
-                }
+                onClick={() => navigate(isSel ? "/" : `/scenario/${s.id}`)}
                 style={{
                   display: "grid",
                   gridTemplateColumns:
@@ -150,8 +148,7 @@ export default function ScenariosPage() {
                   if (!isSel) e.currentTarget.style.background = C.surface2;
                 }}
                 onMouseLeave={(e) => {
-                  if (!isSel)
-                    e.currentTarget.style.background = "transparent";
+                  if (!isSel) e.currentTarget.style.background = "transparent";
                 }}
               >
                 <span

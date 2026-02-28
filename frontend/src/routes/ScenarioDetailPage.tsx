@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { X } from "lucide-react";
 import { useTheme, lightHeat } from "../lib/theme";
 import { MONO } from "../lib/format";
 import { computeHeat, type Scenario } from "../lib/data";
@@ -14,6 +15,7 @@ export function DetailView({ scenario }: { scenario: Scenario }) {
   const [threshold, setThreshold] = useState(0);
   const [runsWidth, setRunsWidth] = useState(280);
   const [summaryWidth, setSummaryWidth] = useState(190);
+  const [crateFilter, setCrateFilter] = useState<string | null>(null);
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
     () => new Set(scenario.runs.map((_, i) => i)),
   );
@@ -27,17 +29,70 @@ export function DetailView({ scenario }: { scenario: Scenario }) {
     });
   }, []);
 
-  const selectAll = useCallback(() => {
-    setSelectedIndices(new Set(scenario.runs.map((_, i) => i)));
-  }, [scenario.runs]);
+  // Visible runs after crate filter
+  const visibleRunIndices = useMemo(() => {
+    if (!crateFilter) return null; // null = show all
+    const indices: number[] = [];
+    scenario.runs.forEach((r, i) => {
+      if (r.dirtyCrates.includes(crateFilter)) indices.push(i);
+    });
+    return new Set(indices);
+  }, [scenario.runs, crateFilter]);
 
-  const selectNone = useCallback(() => {
-    setSelectedIndices(new Set());
-  }, []);
+  const displayedRuns = useMemo(() => {
+    if (!visibleRunIndices) return scenario.runs;
+    return scenario.runs.filter((_, i) => visibleRunIndices.has(i));
+  }, [scenario.runs, visibleRunIndices]);
+
+  // Map displayed index → original index for selection tracking
+  const displayedOriginalIndices = useMemo(() => {
+    if (!visibleRunIndices) return scenario.runs.map((_, i) => i);
+    return scenario.runs
+      .map((_, i) => i)
+      .filter((i) => visibleRunIndices.has(i));
+  }, [scenario.runs, visibleRunIndices]);
+
+  const displayedSelectedIndices = useMemo(() => {
+    const s = new Set<number>();
+    displayedOriginalIndices.forEach((origIdx, dispIdx) => {
+      if (selectedIndices.has(origIdx)) s.add(dispIdx);
+    });
+    return s;
+  }, [displayedOriginalIndices, selectedIndices]);
+
+  const handleToggleDisplayed = useCallback(
+    (displayIdx: number) => {
+      const origIdx = displayedOriginalIndices[displayIdx];
+      if (origIdx == null) return;
+      toggleRun(origIdx);
+    },
+    [displayedOriginalIndices, toggleRun],
+  );
+
+  const handleSelectAllDisplayed = useCallback(() => {
+    setSelectedIndices((prev) => {
+      const next = new Set(prev);
+      for (const origIdx of displayedOriginalIndices) next.add(origIdx);
+      return next;
+    });
+  }, [displayedOriginalIndices]);
+
+  const handleSelectNoneDisplayed = useCallback(() => {
+    setSelectedIndices((prev) => {
+      const next = new Set(prev);
+      for (const origIdx of displayedOriginalIndices) next.delete(origIdx);
+      return next;
+    });
+  }, [displayedOriginalIndices]);
 
   const selectedRuns = useMemo(
-    () => scenario.runs.filter((_, i) => selectedIndices.has(i)),
-    [scenario.runs, selectedIndices],
+    () =>
+      scenario.runs.filter(
+        (_, i) =>
+          selectedIndices.has(i) &&
+          (!visibleRunIndices || visibleRunIndices.has(i)),
+      ),
+    [scenario.runs, selectedIndices, visibleRunIndices],
   );
 
   const crateNames = useMemo(
@@ -66,6 +121,10 @@ export function DetailView({ scenario }: { scenario: Scenario }) {
     () => layoutGraph(filteredGraph, heat, heatColor),
     [filteredGraph, heat, heatColor],
   );
+
+  const handleNodeClick = useCallback((crateName: string) => {
+    setCrateFilter((prev) => (prev === crateName ? null : crateName));
+  }, []);
 
   return (
     <div
@@ -176,15 +235,77 @@ export function DetailView({ scenario }: { scenario: Scenario }) {
             flexShrink: 0,
             height: "100%",
             overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <RunList
-            runs={scenario.runs}
-            selectedIndices={selectedIndices}
-            onToggle={toggleRun}
-            onSelectAll={selectAll}
-            onSelectNone={selectNone}
-          />
+          {/* Crate filter pill */}
+          {crateFilter && (
+            <div
+              style={{
+                padding: "4px 8px",
+                borderBottom: `1px solid ${C.border}`,
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 8,
+                  color: C.textDim,
+                  fontWeight: 700,
+                  letterSpacing: 0.5,
+                  textTransform: "uppercase",
+                }}
+              >
+                crate
+              </span>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 3,
+                  fontSize: 10,
+                  fontFamily: MONO,
+                  fontWeight: 600,
+                  color: C.accent,
+                  background: C.accent + "18",
+                  border: `1px solid ${C.accent}44`,
+                  borderRadius: 3,
+                  padding: "1px 4px 1px 6px",
+                }}
+              >
+                {crateFilter}
+                <button
+                  onClick={() => setCrateFilter(null)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 0,
+                    display: "flex",
+                    color: C.accent,
+                  }}
+                >
+                  <X size={9} />
+                </button>
+              </span>
+              <span style={{ fontSize: 9, color: C.textDim, fontFamily: MONO }}>
+                {displayedRuns.length}/{scenario.runs.length}
+              </span>
+            </div>
+          )}
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            <RunList
+              runs={displayedRuns}
+              selectedIndices={displayedSelectedIndices}
+              onToggle={handleToggleDisplayed}
+              onSelectAll={handleSelectAllDisplayed}
+              onSelectNone={handleSelectNoneDisplayed}
+            />
+          </div>
         </div>
         <PanelHandle
           onDrag={(d) => setRunsWidth((w) => Math.max(180, w + d))}
@@ -206,6 +327,7 @@ export function DetailView({ scenario }: { scenario: Scenario }) {
             bg={C.surface2}
             surface={C.surface}
             border={C.border}
+            onNodeClick={handleNodeClick}
           />
         </div>
 

@@ -40,7 +40,7 @@ fn source_block() -> String {
 }
 
 fn alias_line(tool: &str) -> String {
-    format!("alias {tool}=\"pheromone_cli exec -- {tool}\"")
+    format!("alias {tool}=\"wezel exec -- {tool}\"")
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ fn ensure_init_zsh() -> anyhow::Result<()> {
     if !path.exists() {
         fs::write(
             &path,
-            "# Managed by pheromone — edit freely, but keep the marker comments.\n",
+            "# Managed by wezel — edit freely, but keep the marker comments.\n",
         )?;
     }
     Ok(())
@@ -227,7 +227,7 @@ fn post() -> anyhow::Result<()> {
 // ── CLI ──────────────────────────────────────────────────────────────────────
 
 #[derive(Parser)]
-#[command(name = "pheromone", about = "Lightweight build observer")]
+#[command(name = "wezel", about = "Lightweight build observer")]
 struct Cli {
     #[command(subcommand)]
     command: Command,

@@ -5,7 +5,7 @@ edition = "2024"
 repository.workspace = true
 
 [[bin]]
-name = "pheromone_cli"
+name = "wezel"
 path = "src/main.rs"
 
 [dependencies]

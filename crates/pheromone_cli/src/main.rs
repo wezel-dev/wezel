@@ -1,4 +1,6 @@
 use clap::{Parser, Subcommand};
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
@@ -13,14 +15,8 @@ fn wezel_dir() -> PathBuf {
         .join(".wezel")
 }
 
-fn init_zsh_path() -> PathBuf {
-    wezel_dir().join("init.zsh")
-}
-
-fn zshrc_path() -> PathBuf {
-    dirs::home_dir()
-        .expect("could not determine home directory")
-        .join(".zshrc")
+fn aliases_toml_path() -> PathBuf {
+    wezel_dir().join("aliases.toml")
 }
 
 fn pheromone_dir() -> PathBuf {
@@ -33,107 +29,207 @@ fn events_dir() -> PathBuf {
     pheromone_dir().join("events")
 }
 
-fn source_block() -> String {
-    let path = init_zsh_path();
-    let path = path.display();
-    format!("{SOURCE_MARKER}\n[[ -f \"{path}\" ]] && source \"{path}\"\n{SOURCE_END}")
+// ── Shell detection ──────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Shell {
+    Zsh,
+    Bash,
+    Fish,
 }
 
-fn alias_line(tool: &str) -> String {
-    format!("alias {tool}=\"wezel exec -- {tool}\"")
+impl Shell {
+    fn detect() -> Option<Self> {
+        let shell = std::env::var("SHELL").ok()?;
+        if shell.contains("zsh") {
+            Some(Shell::Zsh)
+        } else if shell.contains("bash") {
+            Some(Shell::Bash)
+        } else if shell.contains("fish") {
+            Some(Shell::Fish)
+        } else {
+            None
+        }
+    }
+
+    fn rc_path(self) -> PathBuf {
+        let home = dirs::home_dir().expect("could not determine home directory");
+        match self {
+            Shell::Zsh => home.join(".zshrc"),
+            Shell::Bash => {
+                // Prefer .bashrc; fall back to .bash_profile
+                let bashrc = home.join(".bashrc");
+                if bashrc.exists() {
+                    bashrc
+                } else {
+                    home.join(".bash_profile")
+                }
+            }
+            Shell::Fish => home.join(".config/fish/conf.d/wezel.fish"),
+        }
+    }
+
+    fn init_script_path(self) -> PathBuf {
+        let dir = wezel_dir();
+        match self {
+            Shell::Zsh => dir.join("init.zsh"),
+            Shell::Bash => dir.join("init.bash"),
+            Shell::Fish => dir.join("init.fish"),
+        }
+    }
+
+    fn source_block(self) -> String {
+        let path = self.init_script_path();
+        let p = path.display();
+        match self {
+            Shell::Zsh | Shell::Bash => {
+                format!("{SOURCE_MARKER}\n[[ -f \"{p}\" ]] && source \"{p}\"\n{SOURCE_END}")
+            }
+            Shell::Fish => {
+                format!(
+                    "{SOURCE_MARKER}\nif test -f \"{p}\"\n    source \"{p}\"\nend\n{SOURCE_END}"
+                )
+            }
+        }
+    }
+
+    fn alias_line(self, tool: &str) -> String {
+        match self {
+            Shell::Zsh | Shell::Bash => format!("alias {tool}=\"wezel exec -- {tool}\""),
+            Shell::Fish => format!("alias {tool} \"wezel exec -- {tool}\""),
+        }
+    }
+
+    fn render_init_script(self, aliases: &BTreeSet<String>) -> String {
+        let mut out =
+            String::from("# Managed by wezel — do not edit, aliases are stored in aliases.toml\n");
+        for tool in aliases {
+            out.push_str(&self.alias_line(tool));
+            out.push('\n');
+        }
+        out
+    }
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
+// ── aliases.toml ─────────────────────────────────────────────────────────────
 
-fn init() -> anyhow::Result<()> {
-    let zshrc = zshrc_path();
-    let contents = if zshrc.exists() {
-        fs::read_to_string(&zshrc)?
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct AliasesFile {
+    #[serde(default)]
+    aliases: BTreeSet<String>,
+}
+
+fn load_aliases() -> anyhow::Result<AliasesFile> {
+    let path = aliases_toml_path();
+    if !path.exists() {
+        return Ok(AliasesFile::default());
+    }
+    let contents = fs::read_to_string(&path)?;
+    let file: AliasesFile = toml::from_str(&contents)?;
+    Ok(file)
+}
+
+fn save_aliases(file: &AliasesFile) -> anyhow::Result<()> {
+    let dir = wezel_dir();
+    fs::create_dir_all(&dir)?;
+    let contents = toml::to_string_pretty(file)?;
+    fs::write(aliases_toml_path(), contents)?;
+    Ok(())
+}
+
+// ── Ensure shell hook ────────────────────────────────────────────────────────
+
+fn ensure_shell_hook(shell: Shell) -> anyhow::Result<()> {
+    let rc = shell.rc_path();
+
+    // For fish, ensure parent dir exists
+    if shell == Shell::Fish {
+        if let Some(parent) = rc.parent() {
+            fs::create_dir_all(parent)?;
+        }
+    }
+
+    let contents = if rc.exists() {
+        fs::read_to_string(&rc)?
     } else {
         String::new()
     };
 
     if contents.contains(SOURCE_MARKER) {
-        println!("Already sourced in {}", zshrc.display());
         return Ok(());
     }
 
-    let mut file = fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&zshrc)?;
+    let mut file = fs::OpenOptions::new().create(true).append(true).open(&rc)?;
 
     writeln!(file)?;
-    writeln!(file, "{}", source_block())?;
+    writeln!(file, "{}", shell.source_block())?;
 
-    // Ensure ~/.wezel/init.zsh exists.
-    ensure_init_zsh()?;
-
-    println!("Installed source hook in {}", zshrc.display());
+    println!("Installed source hook in {}", rc.display());
     Ok(())
 }
 
-fn ensure_init_zsh() -> anyhow::Result<()> {
+// ── Sync aliases.toml → init script ─────────────────────────────────────────
+
+fn sync_init_script(shell: Shell, aliases: &AliasesFile) -> anyhow::Result<()> {
     let dir = wezel_dir();
     fs::create_dir_all(&dir)?;
-    let path = init_zsh_path();
-    if !path.exists() {
-        fs::write(
-            &path,
-            "# Managed by wezel — edit freely, but keep the marker comments.\n",
-        )?;
-    }
+    let script = shell.render_init_script(&aliases.aliases);
+    fs::write(shell.init_script_path(), script)?;
     Ok(())
 }
 
-// ── Alias ────────────────────────────────────────────────────────────────────
+// ── Alias command ────────────────────────────────────────────────────────────
 
-fn alias_install(tool: &str) -> anyhow::Result<()> {
-    ensure_init_zsh()?;
-    let path = init_zsh_path();
-    let contents = fs::read_to_string(&path)?;
-    let line = alias_line(tool);
+fn alias_cmd(tool: Option<&str>, remove: bool) -> anyhow::Result<()> {
+    let shell = Shell::detect()
+        .ok_or_else(|| anyhow::anyhow!("Could not detect shell from $SHELL env var"))?;
 
-    if contents.contains(&line) {
-        println!("Alias for `{tool}` already present in {}", path.display());
-        return Ok(());
+    let mut aliases = load_aliases()?;
+
+    match tool {
+        None => {
+            // No tool given — just ensure the shell hook is in place and sync.
+            ensure_shell_hook(shell)?;
+            sync_init_script(shell, &aliases)?;
+            if aliases.aliases.is_empty() {
+                println!("Shell hook is set up. No aliases configured yet.");
+            } else {
+                println!(
+                    "Shell hook is set up. {} alias(es) active: {}",
+                    aliases.aliases.len(),
+                    aliases
+                        .aliases
+                        .iter()
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+            }
+        }
+        Some(tool) => {
+            if remove {
+                if aliases.aliases.remove(tool) {
+                    save_aliases(&aliases)?;
+                    sync_init_script(shell, &aliases)?;
+                    println!("Removed alias for `{tool}`.");
+                } else {
+                    println!("No alias for `{tool}` found.");
+                }
+            } else {
+                ensure_shell_hook(shell)?;
+                if aliases.aliases.insert(tool.to_string()) {
+                    save_aliases(&aliases)?;
+                    sync_init_script(shell, &aliases)?;
+                    println!("Added alias for `{tool}`.");
+                } else {
+                    // Still sync in case init script is out of date.
+                    sync_init_script(shell, &aliases)?;
+                    println!("Alias for `{tool}` already present.");
+                }
+            }
+        }
     }
 
-    let mut file = fs::OpenOptions::new().append(true).open(&path)?;
-    writeln!(file, "{line}")?;
-
-    println!("Added alias for `{tool}` in {}", path.display());
-    Ok(())
-}
-
-fn alias_remove(tool: &str) -> anyhow::Result<()> {
-    let path = init_zsh_path();
-    if !path.exists() {
-        println!("No alias for `{tool}` found (init.zsh does not exist)");
-        return Ok(());
-    }
-
-    let contents = fs::read_to_string(&path)?;
-    let line = alias_line(tool);
-
-    if !contents.contains(&line) {
-        println!("No alias for `{tool}` found in {}", path.display());
-        return Ok(());
-    }
-
-    let output: String = contents
-        .lines()
-        .filter(|l| *l != line)
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    let mut final_contents = output.trim_end_matches('\n').to_string();
-    if !final_contents.is_empty() {
-        final_contents.push('\n');
-    }
-
-    fs::write(&path, final_contents)?;
-    println!("Removed alias for `{tool}` from {}", path.display());
     Ok(())
 }
 
@@ -235,12 +331,10 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Add source line to .zshrc so ~/.wezel/init.zsh is loaded.
-    Init,
-    /// Manage tool aliases in ~/.wezel/init.zsh.
+    /// Manage tool aliases. Without arguments, ensures the shell hook is installed.
     Alias {
-        /// The tool to alias (e.g. cargo, go, npm).
-        tool: String,
+        /// The tool to alias (e.g. cargo, go, npm). Omit to just set up the shell hook.
+        tool: Option<String>,
         /// Remove the alias instead of installing it.
         #[arg(long)]
         remove: bool,
@@ -257,14 +351,7 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::Init => init(),
-        Command::Alias { tool, remove } => {
-            if remove {
-                alias_remove(&tool)
-            } else {
-                alias_install(&tool)
-            }
-        }
+        Command::Alias { tool, remove } => alias_cmd(tool.as_deref(), remove),
         Command::Post { .. } => post(),
         Command::Pre { .. } => Ok(()),
     }

@@ -177,12 +177,21 @@ fn run_cargo_tee(
 ) -> anyhow::Result<(std::process::ExitStatus, Vec<String>)> {
     let mut cmd = std::process::Command::new(cargo);
 
-    if !has_color_flag(args) && std::io::stderr().is_terminal() {
-        cmd.arg("--color=always");
+    let inject_color = !has_color_flag(args) && std::io::stderr().is_terminal();
+
+    // Insert --color=always after the subcommand so it's recognized by
+    // subcommands like `clippy` that don't accept top-level flags before them.
+    let mut color_injected = false;
+    for arg in args {
+        cmd.arg(arg);
+        if inject_color && !color_injected && !arg.starts_with('-') {
+            // First positional arg is the subcommand; inject right after it.
+            cmd.arg("--color=always");
+            color_injected = true;
+        }
     }
 
     let mut child = cmd
-        .args(args)
         .stdout(Stdio::inherit())
         .stderr(Stdio::piped())
         .spawn()?;

@@ -130,10 +130,10 @@ async fn commit_to_json(pool: &SqlitePool, commit_id: i64) -> Result<Value, Stat
             if let Ok(v) = r.try_get::<String, _>("unit") {
                 m["unit"] = json!(v);
             }
-            if let Ok(d) = r.try_get::<String, _>("detail_json") {
-                if let Ok(parsed) = serde_json::from_str::<Value>(&d) {
-                    m["detail"] = parsed;
-                }
+            if let Ok(d) = r.try_get::<String, _>("detail_json")
+                && let Ok(parsed) = serde_json::from_str::<Value>(&d)
+            {
+                m["detail"] = parsed;
             }
             m
         })

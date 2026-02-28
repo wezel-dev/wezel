@@ -21,6 +21,10 @@ const EMPTY_RUNS: {
 }[] = [];
 const EMPTY_GRAPH: { name: string; deps: string[] }[] = [];
 
+function runKey(r: { timestamp: string; commit: string; user: string }) {
+  return `${r.timestamp}|${r.commit}|${r.user}`;
+}
+
 export function DetailView({
   scenarioId,
   keyboardActive = false,
@@ -50,14 +54,25 @@ export function DetailView({
   const [summaryWidth, setSummaryWidth] = useState(190);
   const [crateFilter, setCrateFilter] = useState<string | null>(null);
 
-  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
     () => new Set(),
   );
 
-  // Reset selected indices when scenario loads / changes
+  // Select all runs when scenario changes
+  const prevScenarioId = useRef(scenarioId);
+  useEffect(() => {
+    if (runs.length > 0 && scenarioId !== prevScenarioId.current) {
+      setSelectedKeys(new Set(runs.map(runKey)));
+    }
+    prevScenarioId.current = scenarioId;
+  }, [scenarioId, runs]);
+
+  // Select all on first load (selectedKeys empty, runs arrive)
   useEffect(() => {
     if (runs.length > 0) {
-      setSelectedIndices(new Set(runs.map((_, i) => i)));
+      setSelectedKeys((prev) =>
+        prev.size === 0 ? new Set(runs.map(runKey)) : prev,
+      );
     }
   }, [runs]);
 
@@ -69,14 +84,18 @@ export function DetailView({
   );
   const prevDisplayedOriginalIndices = useRef<number[]>([]);
 
-  const toggleRun = useCallback((i: number) => {
-    setSelectedIndices((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) next.delete(i);
-      else next.add(i);
-      return next;
-    });
-  }, []);
+  const toggleRun = useCallback(
+    (i: number) => {
+      const key = runKey(runs[i]);
+      setSelectedKeys((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+      });
+    },
+    [runs],
+  );
 
   // Visible runs after crate filter
   const visibleRunIndices = useMemo(() => {
@@ -102,10 +121,10 @@ export function DetailView({
   const displayedSelectedIndices = useMemo(() => {
     const s = new Set<number>();
     displayedOriginalIndices.forEach((origIdx, dispIdx) => {
-      if (selectedIndices.has(origIdx)) s.add(dispIdx);
+      if (selectedKeys.has(runKey(runs[origIdx]))) s.add(dispIdx);
     });
     return s;
-  }, [displayedOriginalIndices, selectedIndices]);
+  }, [displayedOriginalIndices, selectedKeys, runs]);
 
   const handleToggleDisplayed = useCallback(
     (displayIdx: number) => {
@@ -117,12 +136,13 @@ export function DetailView({
   );
 
   const handleSelectAllDisplayed = useCallback(() => {
-    setSelectedIndices((prev) => {
+    setSelectedKeys((prev) => {
       const next = new Set(prev);
-      for (const origIdx of displayedOriginalIndices) next.add(origIdx);
+      for (const origIdx of displayedOriginalIndices)
+        next.add(runKey(runs[origIdx]));
       return next;
     });
-  }, [displayedOriginalIndices]);
+  }, [displayedOriginalIndices, runs]);
 
   // Keyboard nav for runs when this panel is active
   const runKeyMap = useMemo(() => {
@@ -213,21 +233,22 @@ export function DetailView({
   }, [displayedOriginalIndices]);
 
   const handleSelectNoneDisplayed = useCallback(() => {
-    setSelectedIndices((prev) => {
+    setSelectedKeys((prev) => {
       const next = new Set(prev);
-      for (const origIdx of displayedOriginalIndices) next.delete(origIdx);
+      for (const origIdx of displayedOriginalIndices)
+        next.delete(runKey(runs[origIdx]));
       return next;
     });
-  }, [displayedOriginalIndices]);
+  }, [displayedOriginalIndices, runs]);
 
   const selectedRuns = useMemo(
     () =>
       runs.filter(
-        (_, i) =>
-          selectedIndices.has(i) &&
+        (r, i) =>
+          selectedKeys.has(runKey(r)) &&
           (!visibleRunIndices || visibleRunIndices.has(i)),
       ),
-    [runs, selectedIndices, visibleRunIndices],
+    [runs, selectedKeys, visibleRunIndices],
   );
 
   const crateNames = useMemo(() => graph.map((c) => c.name), [graph]);

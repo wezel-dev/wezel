@@ -34,19 +34,26 @@ function useAsync<T>(
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
 
-  const refetch = useCallback(() => {
-    setState((s) => ({ ...s, loading: true, error: null }));
+  const doFetch = useCallback((silent: boolean) => {
+    if (!silent) {
+      setState((s) => ({ ...s, loading: true, error: null }));
+    }
     fetcherRef
       .current()
       .then((data) => setState({ data, loading: false, error: null }))
-      .catch((e) => setState({ data: null, loading: false, error: String(e) }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      .catch((e) =>
+        silent
+          ? setState((s) => ({ ...s, loading: false, error: String(e) }))
+          : setState({ data: null, loading: false, error: String(e) }),
+      );
   }, []);
 
+  const refetch = useCallback(() => doFetch(false), [doFetch]);
+
   useEffect(() => {
-    refetch();
+    doFetch(false);
     if (pollMs > 0) {
-      const id = setInterval(refetch, pollMs);
+      const id = setInterval(() => doFetch(true), pollMs);
       return () => clearInterval(id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

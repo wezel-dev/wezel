@@ -50,11 +50,12 @@ export function layoutGraph(
       depths.set(name, 0);
       return 0;
     }
-    const d =
-      1 +
-      Math.max(
-        ...node.deps.filter((d) => nameToIdx.has(d)).map((d) => getDepth(d)),
-      );
+    const known = node.deps.filter((d) => nameToIdx.has(d));
+    if (known.length === 0) {
+      depths.set(name, 0);
+      return 0;
+    }
+    const d = 1 + Math.max(...known.map((d) => getDepth(d)));
     depths.set(name, d);
     return d;
   }

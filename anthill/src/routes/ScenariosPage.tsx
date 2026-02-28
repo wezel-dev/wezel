@@ -320,6 +320,7 @@ export default function ScenariosPage() {
             key={selected.id}
             scenario={selected}
             keyboardActive={focusPanel === "runs"}
+            userFilter={userFilter}
           />
         </div>
       )}

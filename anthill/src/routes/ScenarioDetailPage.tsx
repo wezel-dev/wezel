@@ -12,12 +12,21 @@ import { layoutGraph, FitViewGraph } from "../components/Graph";
 import { useKeyboardNav } from "../lib/useKeyboardNav";
 
 export function DetailView({
-  scenario,
+  scenario: rawScenario,
   keyboardActive = false,
+  userFilter = [],
 }: {
   scenario: Scenario;
   keyboardActive?: boolean;
+  userFilter?: string[];
 }) {
+  const scenario = useMemo(() => {
+    if (userFilter.length === 0) return rawScenario;
+    return {
+      ...rawScenario,
+      runs: rawScenario.runs.filter((r) => userFilter.includes(r.user)),
+    };
+  }, [rawScenario, userFilter]);
   const { C, heatColor } = useTheme();
   const [threshold, setThreshold] = useState(0);
   const [runsWidth, setRunsWidth] = useState(280);

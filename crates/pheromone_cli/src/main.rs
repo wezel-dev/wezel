@@ -4,6 +4,7 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
+use std::process::ExitCode;
 
 const FLUSH_LOCK: &str = ".flush.lock";
 const SOURCE_MARKER: &str = "# >>> wezel pheromone >>>";
@@ -19,14 +20,8 @@ fn aliases_toml_path() -> PathBuf {
     wezel_dir().join("aliases.toml")
 }
 
-fn pheromone_dir() -> PathBuf {
-    dirs::data_local_dir()
-        .expect("could not determine local data directory")
-        .join("pheromone")
-}
-
 fn events_dir() -> PathBuf {
-    pheromone_dir().join("events")
+    wezel_dir().join("events")
 }
 
 // ── Shell detection ──────────────────────────────────────────────────────────
@@ -57,7 +52,6 @@ impl Shell {
         match self {
             Shell::Zsh => home.join(".zshrc"),
             Shell::Bash => {
-                // Prefer .bashrc; fall back to .bash_profile
                 let bashrc = home.join(".bashrc");
                 if bashrc.exists() {
                     bashrc
@@ -142,7 +136,6 @@ fn save_aliases(file: &AliasesFile) -> anyhow::Result<()> {
 fn ensure_shell_hook(shell: Shell) -> anyhow::Result<()> {
     let rc = shell.rc_path();
 
-    // For fish, ensure parent dir exists
     if shell == Shell::Fish {
         if let Some(parent) = rc.parent() {
             fs::create_dir_all(parent)?;
@@ -188,7 +181,6 @@ fn alias_cmd(tool: Option<&str>, remove: bool) -> anyhow::Result<()> {
 
     match tool {
         None => {
-            // No tool given — just ensure the shell hook is in place and sync.
             ensure_shell_hook(shell)?;
             sync_init_script(shell, &aliases)?;
             if aliases.aliases.is_empty() {
@@ -222,7 +214,6 @@ fn alias_cmd(tool: Option<&str>, remove: bool) -> anyhow::Result<()> {
                     sync_init_script(shell, &aliases)?;
                     println!("Added alias for `{tool}`.");
                 } else {
-                    // Still sync in case init script is out of date.
                     sync_init_script(shell, &aliases)?;
                     println!("Alias for `{tool}` already present.");
                 }
@@ -231,6 +222,47 @@ fn alias_cmd(tool: Option<&str>, remove: bool) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+// ── Exec command ─────────────────────────────────────────────────────────────
+
+fn handler_path(tool: &str) -> PathBuf {
+    wezel_dir().join("bin").join(format!("pheromone-{tool}"))
+}
+
+fn exec_cmd(args: &[String]) -> anyhow::Result<ExitCode> {
+    if args.is_empty() {
+        anyhow::bail!("Usage: wezel exec -- <tool> [args...]");
+    }
+
+    let tool = &args[0];
+    let tool_args = &args[1..];
+
+    let handler = handler_path(tool);
+    let (program, program_args): (&std::ffi::OsStr, &[String]) = if handler.is_file() {
+        (handler.as_os_str(), tool_args)
+    } else {
+        // No handler — just pass through to the tool directly.
+        (std::ffi::OsStr::new(tool.as_str()), tool_args)
+    };
+
+    let status = std::process::Command::new(program)
+        .args(program_args)
+        .status();
+
+    // Best-effort flush after every invocation.
+    let _ = flush_events();
+
+    match status {
+        Ok(s) => {
+            let code = s.code().unwrap_or(1) as u8;
+            Ok(ExitCode::from(code))
+        }
+        Err(e) => {
+            eprintln!("wezel: failed to execute `{tool}`: {e}");
+            Ok(ExitCode::from(127))
+        }
+    }
 }
 
 // ── Flush machinery ──────────────────────────────────────────────────────────
@@ -316,10 +348,6 @@ fn flush_events() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn post() -> anyhow::Result<()> {
-    flush_events()
-}
-
 // ── CLI ──────────────────────────────────────────────────────────────────────
 
 #[derive(Parser)]
@@ -339,20 +367,31 @@ enum Command {
         #[arg(long)]
         remove: bool,
     },
-    Post {
-        args: Vec<String>,
-    },
-    Pre {
+    /// Run a tool, recording pre/post build events.
+    Exec {
+        /// The tool and its arguments (use `--` before them).
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
 }
 
-fn main() -> anyhow::Result<()> {
+fn main() -> ExitCode {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::Alias { tool, remove } => alias_cmd(tool.as_deref(), remove),
-        Command::Post { .. } => post(),
-        Command::Pre { .. } => Ok(()),
+        Command::Alias { tool, remove } => match alias_cmd(tool.as_deref(), remove) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("wezel: {e}");
+                ExitCode::FAILURE
+            }
+        },
+        Command::Exec { args } => match exec_cmd(&args) {
+            Ok(code) => code,
+            Err(e) => {
+                eprintln!("wezel: {e}");
+                ExitCode::FAILURE
+            }
+        },
     }
 }

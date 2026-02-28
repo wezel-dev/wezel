@@ -703,7 +703,6 @@ dependencies = [
  "anyhow",
  "clap",
  "dirs",
- "pheromone_types",
  "serde",
  "serde_json",
  "toml",

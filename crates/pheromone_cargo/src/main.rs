@@ -1,5 +1,5 @@
-use std::io::{BufRead, BufReader, Write};
-use std::path::PathBuf;
+use std::io::{BufRead, BufReader, IsTerminal, Write};
+use std::path::{Path, PathBuf};
 use std::process::{ExitCode, Stdio};
 
 use pheromone_types::{CrateTopo, PheromoneOutput, Profile};
@@ -101,7 +101,7 @@ fn parse_args(args: &[String]) -> Option<ParsedArgs> {
 /// Extract a crate name from a cargo stderr line like:
 ///   `   Compiling foo v0.1.0 (/path/to/foo)`
 fn parse_compiling_line(line: &str) -> Option<String> {
-    let trimmed = line.trim_start();
+    let trimmed = line.trim();
     let rest = trimmed.strip_prefix("Compiling ")?;
     let name = rest.split_whitespace().next()?;
     Some(name.to_string())
@@ -137,7 +137,7 @@ fn find_real_cargo() -> anyhow::Result<PathBuf> {
 
 /// Use guppy to extract the workspace dependency graph.
 /// Returns an empty vec on failure — we never want this to block the build.
-fn extract_graph(cargo: &PathBuf) -> Vec<CrateTopo> {
+fn extract_graph(cargo: &Path) -> Vec<CrateTopo> {
     let graph = match guppy::MetadataCommand::new()
         .cargo_path(cargo)
         .build_graph()
@@ -162,13 +162,26 @@ fn extract_graph(cargo: &PathBuf) -> Vec<CrateTopo> {
         .collect()
 }
 
+/// Returns true if the user already passed `--color` in their args.
+fn has_color_flag(args: &[String]) -> bool {
+    args.iter()
+        .any(|a| a == "--color" || a.starts_with("--color="))
+}
+
 /// Spawn cargo with stderr piped. Forward every line to real stderr while
 /// collecting the names of crates that were (re)compiled.
+/// Injects `--color=always` when real stderr is a terminal so colors survive the pipe.
 fn run_cargo_tee(
-    cargo: &PathBuf,
+    cargo: &Path,
     args: &[String],
 ) -> anyhow::Result<(std::process::ExitStatus, Vec<String>)> {
-    let mut child = std::process::Command::new(cargo)
+    let mut cmd = std::process::Command::new(cargo);
+
+    if !has_color_flag(args) && std::io::stderr().is_terminal() {
+        cmd.arg("--color=always");
+    }
+
+    let mut child = cmd
         .args(args)
         .stdout(Stdio::inherit())
         .stderr(Stdio::piped())
@@ -227,10 +240,7 @@ fn run() -> anyhow::Result<ExitCode> {
         return Ok(ExitCode::from(code));
     };
 
-    // Collect the workspace graph before the build. This is cheap (no compilation)
-    // and gives us the topology regardless of whether the build succeeds.
     let graph = extract_graph(&cargo);
-
     let (status, dirty_crates) = run_cargo_tee(&cargo, &args)?;
 
     emit_output(&parsed, dirty_crates, graph);

@@ -10,6 +10,7 @@ import { Badge } from "../components/Badge";
 import { PanelHandle } from "../components/PanelHandle";
 import { DetailView } from "./ScenarioDetailPage";
 import { useKeyboardNav } from "../lib/useKeyboardNav";
+import fuzzysort from "fuzzysort";
 
 export default function ScenariosPage() {
   const { C } = useTheme();
@@ -41,18 +42,24 @@ export default function ScenariosPage() {
   );
 
   const filtered = useMemo(() => {
-    let list = [...scenarios];
+    let list: { scenario: Scenario; result: Fuzzysort.Result | null }[];
     if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((s) => s.name.toLowerCase().includes(q));
+      const results = fuzzysort.go(search, scenarios, {
+        key: "name",
+        all: true,
+      });
+      list = results.map((r) => ({ scenario: r.obj, result: r }));
+    } else {
+      list = scenarios.map((s) => ({ scenario: s, result: null }));
     }
-    if (profileFilter) list = list.filter((s) => s.profile === profileFilter);
-    list.sort((a, b) => getFreq(b) - getFreq(a));
+    if (profileFilter)
+      list = list.filter((item) => item.scenario.profile === profileFilter);
+    if (!search) list.sort((a, b) => getFreq(b.scenario) - getFreq(a.scenario));
     return list;
   }, [scenarios, search, profileFilter, getFreq]);
 
   const maxFreq = useMemo(
-    () => Math.max(...filtered.map(getFreq), 1),
+    () => Math.max(...filtered.map((f) => getFreq(f.scenario)), 1),
     [filtered, getFreq],
   );
 
@@ -104,7 +111,7 @@ export default function ScenariosPage() {
         k: moveUp,
         Enter: () => {
           if (hlIdx >= 0 && hlIdx < filtered.length) {
-            const s = filtered[hlIdx];
+            const s = filtered[hlIdx].scenario;
             navigate(s.id === selectedId ? "/" : `/scenario/${s.id}`);
           }
         },
@@ -197,7 +204,7 @@ export default function ScenariosPage() {
               No commands match filters
             </div>
           )}
-          {filtered.map((s, fi) => {
+          {filtered.map(({ scenario: s, result }, fi) => {
             const isSel = s.id === selectedId;
             const freq = getFreq(s);
             return (
@@ -242,7 +249,20 @@ export default function ScenariosPage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {s.name}
+                  {result ? (
+                    <>
+                      {result.highlight((m, i) => (
+                        <span
+                          key={i}
+                          style={{ color: C.accent, fontWeight: 700 }}
+                        >
+                          {m}
+                        </span>
+                      ))}
+                    </>
+                  ) : (
+                    s.name
+                  )}
                 </span>
                 <Badge
                   color={s.profile === "dev" ? C.textDim : C.amber}

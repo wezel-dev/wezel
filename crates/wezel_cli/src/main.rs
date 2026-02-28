@@ -3,6 +3,8 @@ mod config;
 mod flush;
 mod shell;
 
+use log::{debug, warn};
+
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -90,10 +92,11 @@ fn exec_cmd(args: &[String]) -> anyhow::Result<ExitCode> {
 
     let handler = handler_path(tool);
     let (program, program_args): (&std::ffi::OsStr, &[String]) = if handler.is_file() {
+        debug!("using pheromone handler: {}", handler.display());
         (handler.as_os_str(), tool_args)
     } else {
-        eprintln!(
-            "wezel warning: pheromone-{tool} not found in {}, passing through to `{tool}`",
+        debug!(
+            "no pheromone-{tool} found in {}, passing through",
             pheromones_dir().display()
         );
         (std::ffi::OsStr::new(tool.as_str()), tool_args)
@@ -101,9 +104,9 @@ fn exec_cmd(args: &[String]) -> anyhow::Result<ExitCode> {
 
     let cwd = std::env::current_dir().unwrap_or_default();
 
-    // No .wezel/config.toml in any ancestor → pure passthrough.
     let project = config::discover(&cwd);
     if project.is_none() {
+        debug!("no project config found, pure passthrough for `{tool}`");
         let status = std::process::Command::new(program)
             .args(program_args)
             .status();
@@ -116,6 +119,7 @@ fn exec_cmd(args: &[String]) -> anyhow::Result<ExitCode> {
         };
     }
     let (wezel_dir, config) = project.unwrap();
+    debug!("project .wezel dir: {}", wezel_dir.display());
 
     let id = uuid::Uuid::new_v4();
     let pheromone_out = pheromone_out_path(tool, &id);
@@ -157,8 +161,13 @@ fn exec_cmd(args: &[String]) -> anyhow::Result<ExitCode> {
         pheromone,
     };
 
+    debug!("persisting event {tool}-{id}");
     persist_event(&wezel_dir, tool, &id, &event);
-    let _ = flush_events(&wezel_dir, &config);
+
+    debug!("flushing events to {}", config.burrow_url);
+    if let Err(e) = flush_events(&wezel_dir, &config) {
+        warn!("flush failed: {e}");
+    }
 
     if let Err(e) = &status {
         eprintln!("wezel: failed to execute `{tool}`: {e}");
@@ -209,6 +218,10 @@ enum Command {
 }
 
 fn main() -> ExitCode {
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn"))
+        .format_timestamp(None)
+        .init();
+
     let cli = Cli::parse();
 
     match cli.command {

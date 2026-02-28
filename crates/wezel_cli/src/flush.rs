@@ -1,6 +1,8 @@
 use std::fs;
 use std::path::PathBuf;
 
+use log::{debug, warn};
+
 use crate::config::Config;
 
 const FLUSH_LOCK: &str = ".flush.lock";
@@ -36,6 +38,7 @@ pub fn flush_events(wezel_dir: &std::path::Path, config: &Config) -> anyhow::Res
     }
 
     let Some(_lock) = FlushLock::try_acquire(&events_dir) else {
+        debug!("flush lock held by another process, skipping");
         return Ok(());
     };
 
@@ -65,6 +68,12 @@ pub fn flush_events(wezel_dir: &std::path::Path, config: &Config) -> anyhow::Res
         return Ok(());
     }
 
+    debug!(
+        "flushing {} event(s) to {}",
+        events.len(),
+        config.burrow_url
+    );
+
     let url = &config.burrow_url;
 
     let agent = ureq::AgentBuilder::new()
@@ -76,11 +85,14 @@ pub fn flush_events(wezel_dir: &std::path::Path, config: &Config) -> anyhow::Res
         .send_json(serde_json::Value::Array(events))
     {
         Ok(_) => {
+            debug!("flush successful, removing {} event file(s)", entries.len());
             for path in &entries {
                 let _ = fs::remove_file(path);
             }
         }
-        Err(_) => {}
+        Err(e) => {
+            warn!("failed to post events to {url}: {e}");
+        }
     }
 
     Ok(())

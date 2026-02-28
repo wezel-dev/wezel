@@ -6,7 +6,16 @@ import { MONO, SANS } from "./lib/format";
 import { MOCK_SCENARIOS, MOCK_COMMITS } from "./lib/data";
 
 export default function Shell() {
-  const [themeKey, setThemeKey] = useState<ThemeKey>("warm");
+  const [themeKey, setThemeKey] = useState<ThemeKey>(
+    () => (localStorage.getItem("themeKey") as ThemeKey) || "warm",
+  );
+  const setThemeKeyPersist = (fn: (k: ThemeKey) => ThemeKey) => {
+    setThemeKey((k) => {
+      const next = fn(k);
+      localStorage.setItem("themeKey", next);
+      return next;
+    });
+  };
   const theme = THEMES[themeKey];
   const C = theme.C;
   const location = useLocation();
@@ -114,7 +123,7 @@ export default function Shell() {
             </div>
             <button
               onClick={() =>
-                setThemeKey((k) => {
+                setThemeKeyPersist((k) => {
                   const i = THEME_ORDER.indexOf(k);
                   return THEME_ORDER[(i + 1) % THEME_ORDER.length];
                 })

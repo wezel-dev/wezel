@@ -4,7 +4,7 @@ use axum::{
     Json, Router,
     extract::{Path, State},
     http::StatusCode,
-    routing::{get, patch},
+    routing::{get, patch, post},
 };
 use clap::Parser;
 use serde_json::{Value, json};
@@ -318,6 +318,142 @@ async fn toggle_pin_p(
     toggle_pin_inner(id, &pool).await
 }
 
+async fn ingest_events(
+    State(pool): State<SqlitePool>,
+    Json(events): Json<Vec<Value>>,
+) -> Result<StatusCode, StatusCode> {
+    for event in &events {
+        let upstream = match event.get("upstream").and_then(|v| v.as_str()) {
+            Some(u) => u,
+            None => continue,
+        };
+        let user = event
+            .get("user")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown");
+        let timestamp = event
+            .get("timestamp")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let duration_ms = event
+            .get("durationMs")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0);
+
+        // Find or create project
+        let name = upstream.rsplit('/').next().unwrap_or(upstream);
+        let project_id: i64 =
+            match sqlx::query_as::<_, (i64,)>("SELECT id FROM projects WHERE upstream = ?")
+                .bind(upstream)
+                .fetch_optional(&pool)
+                .await
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+            {
+                Some((id,)) => id,
+                None => sqlx::query("INSERT INTO projects (name, upstream) VALUES (?, ?)")
+                    .bind(name)
+                    .bind(upstream)
+                    .execute(&pool)
+                    .await
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+                    .last_insert_rowid(),
+            };
+
+        // Ensure user exists
+        sqlx::query("INSERT OR IGNORE INTO users (username) VALUES (?)")
+            .bind(user)
+            .execute(&pool)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        // Process pheromone data if present
+        let Some(pheromone) = event.get("pheromone") else {
+            continue;
+        };
+        let tool = pheromone
+            .get("tool")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown");
+        let command = pheromone
+            .get("command")
+            .and_then(|v| v.as_str())
+            .unwrap_or("build");
+        let profile = pheromone
+            .get("profile")
+            .and_then(|v| v.as_str())
+            .unwrap_or("dev");
+        let packages: Vec<&str> = pheromone
+            .get("packages")
+            .and_then(|v| v.as_array())
+            .map(|a| a.iter().filter_map(|v| v.as_str()).collect())
+            .unwrap_or_default();
+
+        let scenario_name = if packages.is_empty() {
+            format!("{tool} {command}")
+        } else {
+            format!("{tool} {command} {}", packages.join(" "))
+        };
+
+        // Find or create scenario
+        let scenario_id: i64 = match sqlx::query_as::<_, (i64,)>(
+            "SELECT id FROM scenarios WHERE project_id = ? AND name = ? AND profile = ?",
+        )
+        .bind(project_id)
+        .bind(&scenario_name)
+        .bind(profile)
+        .fetch_optional(&pool)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        {
+            Some((id,)) => id,
+            None => {
+                sqlx::query("INSERT INTO scenarios (project_id, name, profile) VALUES (?, ?, ?)")
+                    .bind(project_id)
+                    .bind(&scenario_name)
+                    .bind(profile)
+                    .execute(&pool)
+                    .await
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+                    .last_insert_rowid()
+            }
+        };
+
+        // Upsert dependency graph
+        if let Some(graph) = pheromone.get("graph") {
+            let graph_json = serde_json::to_string(graph).unwrap_or_default();
+            sqlx::query(
+                "INSERT INTO scenario_graphs (scenario_id, graph_json) VALUES (?, ?) \
+                 ON CONFLICT(scenario_id) DO UPDATE SET graph_json = excluded.graph_json",
+            )
+            .bind(scenario_id)
+            .bind(&graph_json)
+            .execute(&pool)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        }
+
+        // Insert run
+        let dirty_crates = pheromone.get("dirtyCrates").cloned().unwrap_or(json!([]));
+        let dirty_json = serde_json::to_string(&dirty_crates).unwrap_or_else(|_| "[]".into());
+
+        sqlx::query(
+            "INSERT INTO runs (scenario_id, user, timestamp, commit_short, build_time_ms, dirty_crates_json) \
+             VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .bind(scenario_id)
+        .bind(user)
+        .bind(timestamp)
+        .bind("")
+        .bind(duration_ms as i64)
+        .bind(&dirty_json)
+        .execute(&pool)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    }
+
+    Ok(StatusCode::OK)
+}
+
 async fn toggle_pin_inner(id: i64, pool: &SqlitePool) -> Result<Json<Value>, StatusCode> {
     let result = sqlx::query("UPDATE scenarios SET pinned = NOT pinned WHERE id = ?")
         .bind(id)
@@ -369,6 +505,7 @@ async fn main() {
         .route("/api/commits", get(get_commits))
         .route("/api/commits/{sha}", get(get_commit))
         .route("/api/users", get(get_users))
+        .route("/api/events", post(ingest_events))
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
         .with_state(pool);

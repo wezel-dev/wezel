@@ -1,4 +1,5 @@
 mod cmd;
+mod config;
 mod flush;
 mod shell;
 
@@ -27,10 +28,6 @@ pub(crate) fn pheromones_dir() -> PathBuf {
 
 fn handler_path(handler: &str) -> PathBuf {
     pheromones_dir().join(format!("pheromone-{handler}"))
-}
-
-fn events_dir() -> PathBuf {
-    wezel_dir().join("events")
 }
 
 fn pheromone_out_path(tool: &str, id: &uuid::Uuid) -> PathBuf {
@@ -72,8 +69,8 @@ fn read_pheromone_output(path: &std::path::Path) -> Option<PheromoneOutput> {
     serde_json::from_str(&content).ok()
 }
 
-fn persist_event(tool: &str, id: &uuid::Uuid, event: &BuildEvent) {
-    let dir = events_dir();
+fn persist_event(wezel_dir: &std::path::Path, tool: &str, id: &uuid::Uuid, event: &BuildEvent) {
+    let dir = wezel_dir.join("events");
     if std::fs::create_dir_all(&dir).is_err() {
         return;
     }
@@ -102,23 +99,32 @@ fn exec_cmd(args: &[String]) -> anyhow::Result<ExitCode> {
         (std::ffi::OsStr::new(tool.as_str()), tool_args)
     };
 
-    // Set up temp file for pheromone handler communication.
+    let cwd = std::env::current_dir().unwrap_or_default();
+
+    // No .wezel/config.toml in any ancestor → pure passthrough.
+    let project = config::discover(&cwd);
+    if project.is_none() {
+        let status = std::process::Command::new(program)
+            .args(program_args)
+            .status();
+        return match status {
+            Ok(s) => Ok(ExitCode::from(s.code().unwrap_or(1) as u8)),
+            Err(e) => {
+                eprintln!("wezel: failed to execute `{tool}`: {e}");
+                Ok(ExitCode::from(127))
+            }
+        };
+    }
+    let (wezel_dir, config) = project.unwrap();
+
     let id = uuid::Uuid::new_v4();
     let pheromone_out = pheromone_out_path(tool, &id);
-
-    let cwd = std::env::current_dir()
-        .map(|p| p.display().to_string())
-        .unwrap_or_default();
 
     let timestamp = {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default();
-        let secs = now.as_secs();
-        // Poor-man's ISO-8601 without pulling in chrono.
-        // Format: seconds since epoch (burrow can parse this).
-        // If you want real ISO-8601 you'd add chrono/time crate.
-        format!("{secs}")
+        format!("{}", now.as_secs())
     };
 
     let start = Instant::now();
@@ -138,13 +144,12 @@ fn exec_cmd(args: &[String]) -> anyhow::Result<ExitCode> {
         Err(_) => (127, ExitCode::from(127)),
     };
 
-    // Read pheromone output (if the handler wrote one) and clean up.
     let pheromone = read_pheromone_output(&pheromone_out);
     let _ = std::fs::remove_file(&pheromone_out);
 
     let event = BuildEvent {
         upstream: detect_upstream(),
-        cwd,
+        cwd: cwd.display().to_string(),
         user: whoami::username(),
         timestamp,
         duration_ms,
@@ -152,9 +157,8 @@ fn exec_cmd(args: &[String]) -> anyhow::Result<ExitCode> {
         pheromone,
     };
 
-    persist_event(tool, &id, &event);
-
-    let _ = flush_events();
+    persist_event(&wezel_dir, tool, &id, &event);
+    let _ = flush_events(&wezel_dir, &config);
 
     if let Err(e) = &status {
         eprintln!("wezel: failed to execute `{tool}`: {e}");

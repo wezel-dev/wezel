@@ -1,13 +1,9 @@
 use std::fs;
 use std::path::PathBuf;
 
-use crate::wezel_dir;
+use crate::config::Config;
 
 const FLUSH_LOCK: &str = ".flush.lock";
-
-fn events_dir() -> PathBuf {
-    wezel_dir().join("events")
-}
 
 struct FlushLock {
     path: PathBuf,
@@ -33,8 +29,8 @@ impl Drop for FlushLock {
     }
 }
 
-pub fn flush_events() -> anyhow::Result<()> {
-    let events_dir = events_dir();
+pub fn flush_events(wezel_dir: &std::path::Path, config: &Config) -> anyhow::Result<()> {
+    let events_dir = wezel_dir.join("events");
     if !events_dir.exists() {
         return Ok(());
     }
@@ -69,7 +65,7 @@ pub fn flush_events() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let url = std::env::var("BURROW_URL").unwrap_or_else(|_| "http://localhost:3001".into());
+    let url = &config.burrow_url;
 
     let agent = ureq::AgentBuilder::new()
         .timeout(std::time::Duration::from_secs(5))

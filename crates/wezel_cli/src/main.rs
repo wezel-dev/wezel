@@ -71,8 +71,8 @@ fn read_pheromone_output(path: &std::path::Path) -> Option<PheromoneOutput> {
     serde_json::from_str(&content).ok()
 }
 
-fn persist_event(wezel_dir: &std::path::Path, tool: &str, id: &uuid::Uuid, event: &BuildEvent) {
-    let dir = wezel_dir.join("events");
+fn persist_event(tool: &str, id: &uuid::Uuid, event: &BuildEvent) {
+    let dir = wezel_dir().join("events");
     if std::fs::create_dir_all(&dir).is_err() {
         return;
     }
@@ -162,10 +162,10 @@ fn exec_cmd(args: &[String]) -> anyhow::Result<ExitCode> {
     };
 
     debug!("persisting event {tool}-{id}");
-    persist_event(&wezel_dir, tool, &id, &event);
+    persist_event(tool, &id, &event);
 
     debug!("flushing events to {}", config.burrow_url);
-    if let Err(e) = flush_events(&wezel_dir, &config) {
+    if let Err(e) = flush_events(&config) {
         warn!("flush failed: {e}");
     }
 

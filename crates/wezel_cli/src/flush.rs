@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use log::{debug, warn};
 
 use crate::config::Config;
+use crate::wezel_dir;
 
 const FLUSH_LOCK: &str = ".flush.lock";
 
@@ -31,8 +32,8 @@ impl Drop for FlushLock {
     }
 }
 
-pub fn flush_events(wezel_dir: &std::path::Path, config: &Config) -> anyhow::Result<()> {
-    let events_dir = wezel_dir.join("events");
+pub fn flush_events(config: &Config) -> anyhow::Result<()> {
+    let events_dir = wezel_dir().join("events");
     if !events_dir.exists() {
         return Ok(());
     }

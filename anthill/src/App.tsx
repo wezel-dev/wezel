@@ -1,18 +1,50 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Shell from "./Shell";
-import ScenariosPage from "./routes/ScenariosPage";
-import CommitPage from "./routes/CommitPage";
-import MeasurementDetailPage from "./routes/MeasurementDetailPage";
+
+const ScenariosPage = lazy(() => import("./routes/ScenariosPage"));
+const CommitPage = lazy(() => import("./routes/CommitPage"));
+const MeasurementDetailPage = lazy(
+  () => import("./routes/MeasurementDetailPage"),
+);
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Shell />,
     children: [
-      { index: true, element: <ScenariosPage /> },
-      { path: "scenario/:id", element: <ScenariosPage /> },
-      { path: "commit/:sha", element: <CommitPage /> },
-      { path: "commit/:sha/m/:id", element: <MeasurementDetailPage /> },
+      {
+        index: true,
+        element: (
+          <Suspense>
+            <ScenariosPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "scenario/:id",
+        element: (
+          <Suspense>
+            <ScenariosPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "commit/:sha",
+        element: (
+          <Suspense>
+            <CommitPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "commit/:sha/m/:id",
+        element: (
+          <Suspense>
+            <MeasurementDetailPage />
+          </Suspense>
+        ),
+      },
     ],
   },
 ]);

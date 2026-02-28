@@ -11,7 +11,7 @@ cargo build --release
 
 echo ""
 echo "Installing wezel CLI..."
-cargo install --path crates/wezel_cli --force
+cargo install --path crates/wezel_cli --force --root "$HOME/.wezel"
 
 echo ""
 mkdir -p "$DEST"

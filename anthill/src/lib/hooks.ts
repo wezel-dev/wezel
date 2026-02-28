@@ -19,9 +19,12 @@ interface AsyncState<T> {
   error: string | null;
 }
 
+const DEFAULT_POLL_MS = 5_000;
+
 function useAsync<T>(
   fetcher: () => Promise<T>,
   deps: unknown[] = [],
+  pollMs: number = DEFAULT_POLL_MS,
 ): AsyncState<T> & { refetch: () => void } {
   const [state, setState] = useState<AsyncState<T>>({
     data: null,
@@ -42,8 +45,12 @@ function useAsync<T>(
 
   useEffect(() => {
     refetch();
+    if (pollMs > 0) {
+      const id = setInterval(refetch, pollMs);
+      return () => clearInterval(id);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, refetch]);
+  }, [...deps, refetch, pollMs]);
 
   return { ...state, refetch };
 }

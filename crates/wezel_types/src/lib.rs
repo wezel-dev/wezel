@@ -155,6 +155,9 @@ pub struct BuildEvent {
     /// Upstream project identifier (e.g. "github.com/user/repo").
     #[serde(skip_serializing_if = "Option::is_none")]
     pub upstream: Option<String>,
+    /// Short git commit SHA at the time of the build.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub commit: Option<String>,
     /// Local working directory where the build ran.
     pub cwd: String,
     /// OS user who ran the build.

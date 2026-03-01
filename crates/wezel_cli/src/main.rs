@@ -49,6 +49,19 @@ fn detect_upstream() -> Option<String> {
     Some(normalize_upstream(&raw))
 }
 
+fn detect_commit() -> Option<String> {
+    let output = std::process::Command::new("git")
+        .args(["rev-parse", "--short", "HEAD"])
+        .stderr(std::process::Stdio::null())
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let sha = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if sha.is_empty() { None } else { Some(sha) }
+}
+
 /// Strip protocol, user@, and .git suffix so SSH and HTTPS remotes match.
 fn normalize_upstream(url: &str) -> String {
     let s = url
@@ -153,6 +166,7 @@ fn exec_cmd(args: &[String]) -> anyhow::Result<ExitCode> {
 
     let event = BuildEvent {
         upstream: detect_upstream(),
+        commit: detect_commit(),
         cwd: cwd.display().to_string(),
         user: whoami::username(),
         timestamp,

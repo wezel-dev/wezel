@@ -433,6 +433,7 @@ async fn ingest_events(
         }
 
         // Insert run
+        let commit_short = event.get("commit").and_then(|v| v.as_str()).unwrap_or("");
         let dirty_crates = pheromone.get("dirtyCrates").cloned().unwrap_or(json!([]));
         let dirty_json = serde_json::to_string(&dirty_crates).unwrap_or_else(|_| "[]".into());
 
@@ -443,7 +444,7 @@ async fn ingest_events(
         .bind(scenario_id)
         .bind(user)
         .bind(timestamp)
-        .bind("")
+        .bind(commit_short)
         .bind(duration_ms as i64)
         .bind(&dirty_json)
         .execute(&pool)

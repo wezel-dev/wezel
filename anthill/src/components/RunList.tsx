@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "../lib/theme";
 import { MONO } from "../lib/format";
 import { fmtMs, fmtTime } from "../lib/format";
@@ -75,6 +76,7 @@ export function RunList({
   markedIndices?: Set<number>;
 }) {
   const { C } = useTheme();
+  const navigate = useNavigate();
   const allSelected = selectedIndices.size === runs.length;
   const runRowsRef = useRef<HTMLDivElement>(null);
 
@@ -254,7 +256,24 @@ export function RunList({
               {/* User */}
               <div style={{ ...colStyle(1), color: C.cyan }}>{run.user}</div>
               {/* Commit */}
-              <div style={{ ...colStyle(2), color: C.pink, fontSize: 9 }}>
+              <div
+                style={{
+                  ...colStyle(2),
+                  color: C.pink,
+                  fontSize: 9,
+                  cursor: "pointer",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/commit/${run.commit}`);
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.textDecoration = "underline")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.textDecoration = "none")
+                }
+              >
                 {run.commit}
               </div>
               {/* Timestamp */}

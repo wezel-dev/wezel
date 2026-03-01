@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { memo, useEffect, useMemo } from "react";
 import {
   ReactFlow,
   Background,
@@ -40,48 +40,85 @@ export function layoutGraph(
     heat: heat[c.name] ?? 0,
   }));
 
-  const nameToIdx = new Map<string, number>();
-  items.forEach((c, i) => nameToIdx.set(c.name, i));
+  // O(1) lookup by name
+  const nameToItem = new Map<string, LayoutNode>();
+  const nameSet = new Set<string>();
+  for (const c of items) {
+    nameToItem.set(c.name, c);
+    nameSet.add(c.name);
+  }
 
+  // Compute depths with iterative memoization
   const depths = new Map<string, number>();
   function getDepth(name: string): number {
     if (depths.has(name)) return depths.get(name)!;
-    const node = items.find((c) => c.name === name);
-    if (!node || node.deps.length === 0) {
-      depths.set(name, 0);
-      return 0;
+    // Mark with -1 to detect cycles
+    depths.set(name, 0);
+    const node = nameToItem.get(name);
+    if (!node || node.deps.length === 0) return 0;
+    let maxChildDepth = -1;
+    for (const d of node.deps) {
+      if (nameSet.has(d)) {
+        const cd = getDepth(d);
+        if (cd > maxChildDepth) maxChildDepth = cd;
+      }
     }
-    const known = node.deps.filter((d) => nameToIdx.has(d));
-    if (known.length === 0) {
-      depths.set(name, 0);
-      return 0;
-    }
-    const d = 1 + Math.max(...known.map((d) => getDepth(d)));
-    depths.set(name, d);
-    return d;
+    const depth = maxChildDepth >= 0 ? 1 + maxChildDepth : 0;
+    depths.set(name, depth);
+    return depth;
   }
-  items.forEach((c) => getDepth(c.name));
+  for (const c of items) getDepth(c.name);
 
-  const maxDepth = Math.max(...Array.from(depths.values()), 0);
+  const maxDepth = items.length > 0 ? Math.max(...depths.values()) : 0;
   const layers: string[][] = Array.from({ length: maxDepth + 1 }, () => []);
-  items.forEach((c) => {
+  for (const c of items) {
     layers[maxDepth - (depths.get(c.name) ?? 0)].push(c.name);
-  });
+  }
 
   const NW = 150,
     NH = 44,
     GX = 32,
     GY = 72;
+
+  // Pre-compute and deduplicate edge marker definitions keyed by color
+  const markerCache = new Map<
+    string,
+    { type: MarkerType; color: string; width: number; height: number }
+  >();
+  function getMarker(color: string) {
+    let m = markerCache.get(color);
+    if (!m) {
+      m = { type: MarkerType.ArrowClosed, color, width: 12, height: 12 };
+      markerCache.set(color, m);
+    }
+    return m;
+  }
+
+  // Pre-compute heatColor results per unique heat value
+  const colorCache = new Map<number, ReturnType<HeatFn>>();
+  function getCachedColor(h: number) {
+    let c = colorCache.get(h);
+    if (!c) {
+      c = heatColor(h);
+      colorCache.set(h, c);
+    }
+    return c;
+  }
+
   const nodes: Node[] = [];
   const edges: Edge[] = [];
+  nodes.length = items.length; // pre-allocate
+  let ni = 0;
 
-  layers.forEach((layer, ly) => {
+  for (let ly = 0; ly < layers.length; ly++) {
+    const layer = layers[ly];
     const w = layer.length * NW + (layer.length - 1) * GX;
-    layer.forEach((name, ci) => {
-      const item = items.find((c) => c.name === name)!;
+    for (let ci = 0; ci < layer.length; ci++) {
+      const name = layer[ci];
+      const item = nameToItem.get(name)!;
       const isExternal = item.external ?? false;
-      const colors = heatColor(item.heat);
-      nodes.push({
+      const colors = getCachedColor(item.heat);
+      nodes[ni++] = {
         id: name,
         type: "crate",
         position: { x: -w / 2 + ci * (NW + GX), y: ly * (NH + GY) },
@@ -93,44 +130,47 @@ export function layoutGraph(
           accentColor,
           external: isExternal,
         },
-      });
-    });
-  });
+      };
+    }
+  }
+  nodes.length = ni;
 
-  items.forEach((crate) => {
-    crate.deps.forEach((dep) => {
-      if (nameToIdx.has(dep)) {
-        const col = heatColor(crate.heat);
+  // Build edges
+  for (const crate of items) {
+    const col = getCachedColor(crate.heat);
+    const style = { stroke: col.border, strokeWidth: 1.5, opacity: 0.3 };
+    const marker = getMarker(col.border);
+    for (const dep of crate.deps) {
+      if (nameSet.has(dep)) {
         edges.push({
           id: `${crate.name}->${dep}`,
           source: crate.name,
           target: dep,
-          style: { stroke: col.border, strokeWidth: 1.5, opacity: 0.3 },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: col.border,
-            width: 12,
-            height: 12,
-          },
+          style,
+          markerEnd: marker,
         });
       }
-    });
-  });
+    }
+  }
 
   return { nodes, edges };
 }
 
 // ── ReactFlow crate node ─────────────────────────────────────────────────────
 
-function CrateNodeComponent({ data }: NodeProps) {
-  const d = data as {
-    label: string;
-    heat: number;
-    colors: { border: string; bg: string; text: string };
-    highlighted?: boolean;
-    accentColor?: string;
-    external?: boolean;
-  };
+interface CrateNodeData {
+  label: string;
+  heat: number;
+  colors: { border: string; bg: string; text: string };
+  highlighted?: boolean;
+  accentColor?: string;
+  external?: boolean;
+}
+
+const CrateNodeComponent = memo(function CrateNodeComponent({
+  data,
+}: NodeProps) {
+  const d = data as unknown as CrateNodeData;
   const hl = d.highlighted && d.accentColor;
   return (
     <div
@@ -189,9 +229,9 @@ function CrateNodeComponent({ data }: NodeProps) {
       />
     </div>
   );
-}
+});
 
-export const nodeTypes = { crate: CrateNodeComponent };
+const nodeTypes = { crate: CrateNodeComponent };
 
 // ── Graph wrapper that re-fits on resize ─────────────────────────────────────
 
@@ -228,15 +268,21 @@ export function FitViewGraph({
   border: string;
   onNodeClick?: (crateName: string) => void;
 }) {
+  const handleNodeClick = useMemo(
+    () =>
+      onNodeClick
+        ? (_event: React.MouseEvent, node: Node) => onNodeClick(node.id)
+        : undefined,
+    [onNodeClick],
+  );
+
   return (
     <ReactFlowProvider>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
-        onNodeClick={
-          onNodeClick ? (_event, node) => onNodeClick(node.id) : undefined
-        }
+        onNodeClick={handleNodeClick}
         fitView
         fitViewOptions={{ padding: 0.25 }}
         colorMode={colorMode}
@@ -262,3 +308,5 @@ export function FitViewGraph({
     </ReactFlowProvider>
   );
 }
+
+export { nodeTypes };

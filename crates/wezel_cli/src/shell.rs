@@ -71,8 +71,12 @@ impl Shell {
 
     pub fn alias_line(self, name: &str, handler: &str) -> String {
         match self {
-            Shell::Zsh | Shell::Bash => format!("alias {name}=\"wezel exec -- {handler}\""),
-            Shell::Fish => format!("alias {name} \"wezel exec -- {handler}\""),
+            Shell::Zsh | Shell::Bash => {
+                format!("{name}() {{ wezel exec -- {handler} \"$@\"; }}")
+            }
+            Shell::Fish => {
+                format!("function {name}; wezel exec -- {handler} $argv; end")
+            }
         }
     }
 

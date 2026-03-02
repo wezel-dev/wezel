@@ -1,32 +1,15 @@
 import { useState, useCallback } from "react";
 import { useTheme } from "../lib/theme";
+import { useDrag } from "../lib/useDrag";
 
 export function PanelHandle({ onDrag }: { onDrag: (delta: number) => void }) {
   const { C } = useTheme();
   const [hover, setHover] = useState(false);
 
-  const onMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      let lastX = e.clientX;
-      const onMouseMove = (ev: MouseEvent) => {
-        const dx = ev.clientX - lastX;
-        lastX = ev.clientX;
-        onDrag(dx);
-      };
-      const onMouseUp = () => {
-        document.removeEventListener("mousemove", onMouseMove);
-        document.removeEventListener("mouseup", onMouseUp);
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-      };
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
-    },
-    [onDrag],
-  );
+  const onMouseDown = useDrag({
+    onDrag: useCallback((dx: number) => onDrag(dx), [onDrag]),
+    cursor: "col-resize",
+  });
 
   return (
     <div

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Pin, PinOff } from "lucide-react";
 import { useTheme } from "../lib/theme";
@@ -9,7 +9,7 @@ import { FilterBar } from "../components/FilterBar";
 import { FreqBar } from "../components/FreqBar";
 import { Badge } from "../components/Badge";
 import { PanelHandle } from "../components/PanelHandle";
-import { DetailView } from "./ScenarioDetailPage";
+import { DetailView } from "../components/DetailView";
 import { useKeyboardNav } from "../lib/useKeyboardNav";
 import fuzzysort from "fuzzysort";
 
@@ -19,14 +19,17 @@ export default function ScenariosPage() {
   const { id } = useParams();
   const selectedId = id ? Number(id) : null;
 
-  const { scenarios, togglePin: apiTogglePin } = useScenarios();
+  const { scenarios, error, togglePin: apiTogglePin } = useScenarios();
   const [search, setSearch] = useState("");
   const [userFilter, setUserFilter] = useState<string[]>([]);
   const [profileFilter, setProfileFilter] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [listWidth, setListWidth] = useState(380);
   const rowsRef = useRef<HTMLDivElement>(null);
   const [hlIdx, setHlIdx] = useState(-1);
   const [focusPanel, setFocusPanel] = useState<"list" | "runs">("list");
+
+  const GRID_COLS = "minmax(140px, 3fr) 50px 70px minmax(80px, 1fr) 56px";
 
   const togglePin = useCallback(
     (sid: number) => {
@@ -66,7 +69,7 @@ export default function ScenariosPage() {
   );
 
   // Reset highlight when filter changes
-  useMemo(() => setHlIdx(-1), [filtered]);
+  useEffect(() => setHlIdx(-1), [filtered]);
 
   const scrollToHl = useCallback((idx: number) => {
     const container = rowsRef.current;
@@ -106,6 +109,7 @@ export default function ScenariosPage() {
           scrollToHl(next);
           return next;
         });
+      // eslint-disable-next-line react-hooks/refs -- ref is only read inside callbacks, not during render
       Object.assign(shared, {
         ArrowDown: moveDown,
         j: moveDown,
@@ -126,7 +130,7 @@ export default function ScenariosPage() {
   useKeyboardNav(keyMap);
 
   // Reset focus panel when detail closes
-  useMemo(() => {
+  useEffect(() => {
     if (selectedId == null) setFocusPanel("list");
   }, [selectedId]);
 
@@ -154,6 +158,11 @@ export default function ScenariosPage() {
             borderBottom: `1px solid ${C.border}`,
           }}
         >
+          {error && (
+            <div style={{ color: "#f44", padding: "8px 16px", fontSize: 13 }}>
+              {error}
+            </div>
+          )}
           <FilterBar
             search={search}
             onSearch={setSearch}
@@ -168,8 +177,7 @@ export default function ScenariosPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns:
-              "minmax(140px, 3fr) 50px 70px minmax(80px, 1fr) 56px",
+            gridTemplateColumns: GRID_COLS,
             gap: 6,
             padding: "4px 12px",
             fontSize: 9,
@@ -229,15 +237,14 @@ export default function ScenariosPage() {
                 onClick={() => navigate(isSel ? "/" : `/scenario/${s.id}`)}
                 style={{
                   display: "grid",
-                  gridTemplateColumns:
-                    "minmax(140px, 3fr) 50px 70px minmax(80px, 1fr) 56px",
+                  gridTemplateColumns: GRID_COLS,
                   gap: 6,
                   padding: "6px 12px",
                   alignItems: "center",
                   cursor: "pointer",
                   background: isSel
                     ? C.accent + "10"
-                    : fi === hlIdx
+                    : fi === hlIdx || hoveredId === s.id
                       ? C.surface2
                       : "transparent",
                   borderLeft: isSel
@@ -245,13 +252,11 @@ export default function ScenariosPage() {
                     : "2px solid transparent",
                   transition: "all 0.1s",
                 }}
-                onMouseEnter={(e) => {
-                  if (!isSel) e.currentTarget.style.background = C.surface2;
+                onMouseEnter={() => {
+                  if (!isSel) setHoveredId(s.id);
                 }}
-                onMouseLeave={(e) => {
-                  if (!isSel)
-                    e.currentTarget.style.background =
-                      fi === hlIdx ? C.surface2 : "transparent";
+                onMouseLeave={() => {
+                  setHoveredId(null);
                 }}
               >
                 <span

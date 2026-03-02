@@ -28,6 +28,7 @@ const NH = 44;
 const GX = 32;
 const GY = 72;
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function layoutGraph(
   topo: CrateTopo[],
   heat: Record<string, number>,
@@ -448,6 +449,24 @@ function usePanZoom(containerRef: React.RefObject<HTMLDivElement | null>) {
   return { transform, onWheel, onMouseDown, onMouseMove, onMouseUp, fitView };
 }
 
+function getTransitiveAncestors(
+  startKey: string,
+  dependantsMap: Map<string, Set<string>>,
+): Set<string> {
+  const set = new Set<string>();
+  const queue = [startKey];
+  while (queue.length > 0) {
+    const name = queue.pop()!;
+    if (set.has(name)) continue;
+    set.add(name);
+    const parents = dependantsMap.get(name);
+    if (parents) {
+      for (const p of parents) queue.push(p);
+    }
+  }
+  return set;
+}
+
 export function FitViewGraph({
   nodes,
   edges,
@@ -460,9 +479,7 @@ export function FitViewGraph({
 }: {
   nodes: GraphNode[];
   edges: GraphEdge[];
-  colorMode?: "light" | "dark";
   bg: string;
-  surface?: string;
   border: string;
   accentColor?: string;
   onNodeClick?: (crateName: string) => void;
@@ -487,21 +504,11 @@ export function FitViewGraph({
   }, [edges]);
 
   // On hover: the hovered node + all transitive dependants
-  const hoverSet = useMemo(() => {
-    if (!hoveredCrate) return null;
-    const set = new Set<string>();
-    const queue = [hoveredCrate];
-    while (queue.length > 0) {
-      const name = queue.pop()!;
-      if (set.has(name)) continue;
-      set.add(name);
-      const parents = dependantsMap.get(name);
-      if (parents) {
-        for (const p of parents) queue.push(p);
-      }
-    }
-    return set;
-  }, [hoveredCrate, dependantsMap]);
+  const hoverSet = useMemo(
+    () =>
+      hoveredCrate ? getTransitiveAncestors(hoveredCrate, dependantsMap) : null,
+    [hoveredCrate, dependantsMap],
+  );
 
   // Edges that connect hovered nodes
   const hoverEdgeSet = useMemo(() => {
@@ -516,21 +523,11 @@ export function FitViewGraph({
   }, [hoverSet, edges]);
 
   // Focused crate: same transitive highlighting as hover, but sticky
-  const focusSet = useMemo(() => {
-    if (!focusedCrate) return null;
-    const set = new Set<string>();
-    const queue = [focusedCrate];
-    while (queue.length > 0) {
-      const name = queue.pop()!;
-      if (set.has(name)) continue;
-      set.add(name);
-      const parents = dependantsMap.get(name);
-      if (parents) {
-        for (const p of parents) queue.push(p);
-      }
-    }
-    return set;
-  }, [focusedCrate, dependantsMap]);
+  const focusSet = useMemo(
+    () =>
+      focusedCrate ? getTransitiveAncestors(focusedCrate, dependantsMap) : null,
+    [focusedCrate, dependantsMap],
+  );
 
   const focusEdgeSet = useMemo(() => {
     if (!focusSet) return null;

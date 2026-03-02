@@ -53,8 +53,30 @@ function useAsync<T>(
   useEffect(() => {
     doFetch(false);
     if (pollMs > 0) {
-      const id = setInterval(() => doFetch(true), pollMs);
-      return () => clearInterval(id);
+      let id: ReturnType<typeof setInterval> | null = setInterval(
+        () => doFetch(true),
+        pollMs,
+      );
+
+      const onVisibility = () => {
+        if (document.hidden) {
+          if (id != null) {
+            clearInterval(id);
+            id = null;
+          }
+        } else {
+          doFetch(true);
+          if (id == null) {
+            id = setInterval(() => doFetch(true), pollMs);
+          }
+        }
+      };
+
+      document.addEventListener("visibilitychange", onVisibility);
+      return () => {
+        if (id != null) clearInterval(id);
+        document.removeEventListener("visibilitychange", onVisibility);
+      };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, refetch, pollMs]);

@@ -6,6 +6,7 @@ import { useTheme } from "../lib/theme";
 import { MONO, fmtValue } from "../lib/format";
 import { type Measurement, type MeasurementDetail } from "../lib/data";
 import { useCommits } from "../lib/hooks";
+import { DeltaBadge } from "../components/DeltaBadge";
 
 // ── Sort logic ───────────────────────────────────────────────────────────────
 
@@ -148,8 +149,10 @@ export default function MeasurementDetailPage() {
 
   const [sortKey, setSortKey] = useState<SortKey>("value");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [hoveredBack, setHoveredBack] = useState(false);
 
-  const { commits } = useCommits();
+  const { commits, error } = useCommits();
 
   const commit = useMemo(
     () => commits.find((c) => c.shortSha === sha || c.sha === sha) ?? null,
@@ -277,6 +280,21 @@ export default function MeasurementDetailPage() {
         overflow: "hidden",
       }}
     >
+      {error && (
+        <div
+          style={{
+            padding: "8px 16px",
+            background: C.red + "18",
+            borderBottom: `1px solid ${C.red}44`,
+            color: C.red,
+            fontSize: 11,
+            fontFamily: MONO,
+          }}
+        >
+          Error: {error}
+        </div>
+      )}
+
       {/* Nav */}
       <div
         style={{
@@ -296,13 +314,13 @@ export default function MeasurementDetailPage() {
             gap: 4,
             background: "none",
             border: "none",
-            color: C.textMid,
+            color: hoveredBack ? C.accent : C.textMid,
             fontSize: 10,
             fontFamily: MONO,
             cursor: "pointer",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = C.accent)}
-          onMouseLeave={(e) => (e.currentTarget.style.color = C.textMid)}
+          onMouseEnter={() => setHoveredBack(true)}
+          onMouseLeave={() => setHoveredBack(false)}
         >
           <ArrowLeft size={12} /> {commit.shortSha}
         </button>
@@ -362,35 +380,14 @@ export default function MeasurementDetailPage() {
                 {measurement.unit}
               </span>
             )}
-            {measurement.prevValue != null &&
-              (() => {
-                const diff = measurement.value! - measurement.prevValue;
-                const pct =
-                  measurement.prevValue !== 0
-                    ? Math.round((diff / measurement.prevValue) * 100)
-                    : 0;
-                const isUp = diff > 0;
-                const color = isUp ? C.red : C.green;
-                const sign = isUp ? "+" : "";
-                return (
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontFamily: MONO,
-                      fontWeight: 600,
-                      color,
-                      padding: "1px 6px",
-                      borderRadius: 3,
-                      background: color + "15",
-                      border: `1px solid ${color}33`,
-                    }}
-                  >
-                    {sign}
-                    {fmtValue(diff, measurement.unit)} ({sign}
-                    {pct}%)
-                  </span>
-                );
-              })()}
+            {measurement.prevValue != null && (
+              <DeltaBadge
+                current={measurement.value!}
+                baseline={measurement.prevValue}
+                unit={measurement.unit}
+                style={{ fontSize: 11 }}
+              />
+            )}
           </div>
         )}
       </div>
@@ -460,19 +457,7 @@ export default function MeasurementDetailPage() {
           {/* Rows */}
           {sorted.map((d, i) => {
             const diff = d.prevValue != null ? d.value - d.prevValue : null;
-            const pct =
-              d.prevValue != null && d.prevValue !== 0
-                ? Math.round(((d.value - d.prevValue) / d.prevValue) * 100)
-                : null;
             const isRegression = diff != null && diff > 0;
-            const deltaColor =
-              diff == null
-                ? C.textDim
-                : diff === 0
-                  ? C.textDim
-                  : isRegression
-                    ? C.red
-                    : C.green;
 
             return (
               <div
@@ -488,13 +473,10 @@ export default function MeasurementDetailPage() {
                   borderBottom: `1px solid ${C.border}22`,
                   fontSize: 11,
                   fontFamily: MONO,
+                  background: hoveredIdx === i ? C.surface2 : "transparent",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = C.surface2)
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
+                onMouseEnter={() => setHoveredIdx(i)}
+                onMouseLeave={() => setHoveredIdx(null)}
               >
                 {/* Name */}
                 <span
@@ -550,22 +532,25 @@ export default function MeasurementDetailPage() {
                 )}
 
                 {/* Delta */}
-                {hasPrev && (
-                  <span
-                    style={{
-                      textAlign: "right",
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: deltaColor,
-                    }}
-                  >
-                    {diff != null && diff !== 0
-                      ? `${diff > 0 ? "+" : ""}${fmtValue(diff, measurement.unit)} (${pct! > 0 ? "+" : ""}${pct}%)`
-                      : diff === 0
-                        ? "—"
-                        : "—"}
-                  </span>
-                )}
+                {hasPrev &&
+                  (diff != null && diff !== 0 ? (
+                    <DeltaBadge
+                      current={d.value}
+                      baseline={d.prevValue!}
+                      unit={measurement.unit}
+                      style={{ textAlign: "right", fontSize: 10 }}
+                    />
+                  ) : (
+                    <span
+                      style={{
+                        textAlign: "right",
+                        color: C.textDim,
+                        fontSize: 10,
+                      }}
+                    >
+                      —
+                    </span>
+                  ))}
               </div>
             );
           })}

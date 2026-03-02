@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "../lib/theme";
 import { MONO } from "../lib/format";
 import { fmtMs, fmtTime } from "../lib/format";
+import { useDrag } from "../lib/useDrag";
 import type { Run } from "../lib/data";
 
 const RUN_COLS = [
@@ -16,46 +17,44 @@ const RUN_COLS = [
 
 function useResizableColumns(initial: number[]) {
   const [widths, setWidths] = useState(initial);
-  const dragging = useRef<{
-    col: number;
-    startX: number;
-    startW: number;
-  } | null>(null);
+  const [activeCol, setActiveCol] = useState<number | null>(null);
+  const [hoveredHandle, setHoveredHandle] = useState<number | null>(null);
 
-  const onMouseDown = useCallback(
+  const activeColRef = useRef(activeCol);
+  useEffect(() => {
+    activeColRef.current = activeCol;
+  }, [activeCol]);
+
+  const onDragMove = useCallback((dx: number) => {
+    const col = activeColRef.current;
+    if (col == null) return;
+    setWidths((prev) => {
+      const next = [...prev];
+      next[col] = Math.max(20, next[col] + dx);
+      return next;
+    });
+  }, []);
+
+  const onDragEnd = useCallback(() => {
+    setActiveCol(null);
+  }, []);
+
+  const onMouseDown = useDrag({
+    onDrag: onDragMove,
+    onDragEnd,
+    cursor: "col-resize",
+  });
+
+  const startResize = useCallback(
     (col: number, e: React.MouseEvent) => {
-      e.preventDefault();
-      dragging.current = { col, startX: e.clientX, startW: widths[col] };
-
-      const onMouseMove = (ev: MouseEvent) => {
-        if (!dragging.current) return;
-        const diff = ev.clientX - dragging.current.startX;
-        const newW = Math.max(20, dragging.current.startW + diff);
-        setWidths((prev) => {
-          const next = [...prev];
-          next[dragging.current!.col] = newW;
-          return next;
-        });
-      };
-
-      const onMouseUp = () => {
-        dragging.current = null;
-        document.removeEventListener("mousemove", onMouseMove);
-        document.removeEventListener("mouseup", onMouseUp);
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-      };
-
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
+      setActiveCol(col);
+      onMouseDown(e);
     },
-    [widths],
+    [onMouseDown],
   );
 
   const template = widths.map((w) => `${w}px`).join(" ");
-  return { widths, template, onMouseDown };
+  return { widths, template, startResize, hoveredHandle, setHoveredHandle };
 }
 
 export function RunList({
@@ -79,6 +78,7 @@ export function RunList({
   const navigate = useNavigate();
   const allSelected = selectedIndices.size === runs.length;
   const runRowsRef = useRef<HTMLDivElement>(null);
+  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
   // Scroll highlighted row into view
   useEffect(() => {
@@ -88,9 +88,8 @@ export function RunList({
     const row = container.children[hlIdx] as HTMLElement | undefined;
     row?.scrollIntoView({ block: "nearest" });
   }, [hlIdx]);
-  const { template, onMouseDown } = useResizableColumns(
-    RUN_COLS.map((c) => c.init),
-  );
+  const { template, startResize, hoveredHandle, setHoveredHandle } =
+    useResizableColumns(RUN_COLS.map((c) => c.init));
 
   const colStyle = (i: number): React.CSSProperties => ({
     overflow: "hidden",
@@ -102,7 +101,9 @@ export function RunList({
 
   const handle = (i: number) => (
     <div
-      onMouseDown={(e) => onMouseDown(i, e)}
+      onMouseDown={(e) => startResize(i, e)}
+      onMouseEnter={() => setHoveredHandle(i)}
+      onMouseLeave={() => setHoveredHandle(null)}
       style={{
         position: "absolute",
         right: 0,
@@ -111,14 +112,13 @@ export function RunList({
         width: 5,
         cursor: "col-resize",
         zIndex: 1,
+        background: hoveredHandle === i ? C.accent + "44" : "transparent",
+        borderRadius: hoveredHandle === i ? 1 : 0,
       }}
-      onMouseEnter={(e) => (
-        (e.currentTarget.style.background = C.accent + "44"),
-        (e.currentTarget.style.borderRadius = "1px")
-      )}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     />
   );
+
+  const [hoveredCommit, setHoveredCommit] = useState<number | null>(null);
 
   return (
     <div
@@ -195,23 +195,31 @@ export function RunList({
           const isSel = selectedIndices.has(rowIdx);
           const isHl = rowIdx === hlIdx;
           const isMarked = markedIndices?.has(rowIdx) ?? false;
+          const isHovered = hoveredRow === rowIdx;
+
+          const rowBg = isHl
+            ? C.accent + "22"
+            : isMarked
+              ? C.accent + "33"
+              : isSel
+                ? C.accent + "10"
+                : isHovered
+                  ? C.surface2
+                  : "transparent";
+
           return (
             <div
               key={rowIdx}
               onClick={() => onToggle(rowIdx)}
+              onMouseEnter={() => setHoveredRow(rowIdx)}
+              onMouseLeave={() => setHoveredRow(null)}
               style={{
                 display: "grid",
                 gridTemplateColumns: template,
                 padding: "3px 10px",
                 alignItems: "center",
                 cursor: "pointer",
-                background: isHl
-                  ? C.accent + "22"
-                  : isMarked
-                    ? C.accent + "33"
-                    : isSel
-                      ? C.accent + "10"
-                      : "transparent",
+                background: rowBg,
                 borderLeft: isHl
                   ? `2px solid ${C.accent}`
                   : isMarked
@@ -223,15 +231,6 @@ export function RunList({
                 outlineOffset: -1,
                 fontSize: 10,
                 fontFamily: MONO,
-              }}
-              onMouseEnter={(e) => {
-                if (!isSel) e.currentTarget.style.background = C.surface2;
-              }}
-              onMouseLeave={(e) => {
-                if (!isSel)
-                  e.currentTarget.style.background = isHl
-                    ? C.surface2
-                    : "transparent";
               }}
             >
               {/* Checkbox */}
@@ -262,17 +261,15 @@ export function RunList({
                   color: C.pink,
                   fontSize: 9,
                   cursor: "pointer",
+                  textDecoration:
+                    hoveredCommit === rowIdx ? "underline" : "none",
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(`/commit/${run.commit}`);
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.textDecoration = "underline")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.textDecoration = "none")
-                }
+                onMouseEnter={() => setHoveredCommit(rowIdx)}
+                onMouseLeave={() => setHoveredCommit(null)}
               >
                 {run.commit ? run.commit.slice(0, 7) : ""}
               </div>

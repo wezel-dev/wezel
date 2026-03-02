@@ -1,6 +1,5 @@
 import { useTheme } from "../lib/theme";
-import { MONO } from "../lib/format";
-import { fmtMs } from "../lib/format";
+import { MONO, fmtMs } from "../lib/format";
 import { Stat } from "./Stat";
 import type { Scenario, Run } from "../lib/data";
 
@@ -11,22 +10,6 @@ function percentile(sorted: number[], p: number): number {
   const hi = Math.ceil(idx);
   if (lo === hi) return sorted[lo];
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
-}
-
-function fmtMsPrecise(ms: number): string {
-  if (ms >= 3_600_000) {
-    const h = Math.floor(ms / 3_600_000);
-    const m = Math.floor((ms % 3_600_000) / 60_000);
-    const s = ((ms % 60_000) / 1000).toFixed(1);
-    return `${h}h ${m}m ${s}s`;
-  }
-  if (ms >= 60_000) {
-    const m = Math.floor(ms / 60_000);
-    const s = ((ms % 60_000) / 1000).toFixed(2);
-    return `${m}m ${s}s`;
-  }
-  if (ms >= 1000) return `${(ms / 1000).toFixed(3)}s`;
-  return `${ms.toFixed(1)}ms`;
 }
 
 function fmtTimespan(runs: Run[]): string {
@@ -105,7 +88,7 @@ export function Summary({
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <Stat
           label="Total time"
-          value={n > 0 ? fmtMsPrecise(sum) : dash}
+          value={n > 0 ? fmtMs(sum, true) : dash}
           color={C.cyan}
         />
         <Stat

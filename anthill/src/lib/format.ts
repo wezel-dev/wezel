@@ -20,10 +20,25 @@ export function fmtValue(value: number, unit?: string): string {
   }
 }
 
-export function fmtMs(ms: number): string {
-  if (ms >= 60_000) return `${(ms / 60_000).toFixed(1)}m`;
-  if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
-  return `${ms}ms`;
+export function fmtMs(ms: number, precise?: boolean): string {
+  if (!precise) {
+    if (ms >= 60_000) return `${(ms / 60_000).toFixed(1)}m`;
+    if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
+    return `${ms}ms`;
+  }
+  if (ms >= 3_600_000) {
+    const h = Math.floor(ms / 3_600_000);
+    const m = Math.floor((ms % 3_600_000) / 60_000);
+    const s = ((ms % 60_000) / 1000).toFixed(1);
+    return `${h}h ${m}m ${s}s`;
+  }
+  if (ms >= 60_000) {
+    const m = Math.floor(ms / 60_000);
+    const s = ((ms % 60_000) / 1000).toFixed(2);
+    return `${m}m ${s}s`;
+  }
+  if (ms >= 1000) return `${(ms / 1000).toFixed(3)}s`;
+  return `${ms.toFixed(1)}ms`;
 }
 
 export function fmtTime(ts: string): string {

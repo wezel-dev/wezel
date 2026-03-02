@@ -26,6 +26,7 @@ import {
 } from "../lib/data";
 import { useCommits } from "../lib/hooks";
 import { Badge } from "../components/Badge";
+import { DeltaBadge } from "../components/DeltaBadge";
 
 // ── Small pieces ─────────────────────────────────────────────────────────────
 
@@ -59,44 +60,6 @@ function StatusIcon({
 function statusLabel(s: MeasurementStatus): string {
   if (s === "not-started") return "not started";
   return s;
-}
-
-function DeltaBadge({
-  current,
-  prev,
-  unit,
-  C,
-}: {
-  current: number;
-  prev: number;
-  unit?: string;
-  C: ReturnType<typeof useTheme>["C"];
-}) {
-  const diff = current - prev;
-  const pct = prev !== 0 ? Math.round((diff / prev) * 100) : 0;
-  // For most things, going up is bad (more time, more lines, more bytes).
-  const isRegression = diff > 0;
-  const color = isRegression ? C.red : C.green;
-  const sign = diff > 0 ? "+" : "";
-  return (
-    <span
-      style={{
-        fontSize: 10,
-        fontFamily: MONO,
-        fontWeight: 600,
-        color,
-        padding: "1px 5px",
-        borderRadius: 3,
-        background: color + "15",
-        border: `1px solid ${color}33`,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {sign}
-      {fmtValue(diff, unit)} ({sign}
-      {pct}%)
-    </span>
-  );
 }
 
 // ── Progress bar ─────────────────────────────────────────────────────────────
@@ -259,9 +222,8 @@ function MeasurementRow({
         {hasDelta ? (
           <DeltaBadge
             current={m.value!}
-            prev={m.prevValue!}
+            baseline={m.prevValue!}
             unit={m.unit}
-            C={C}
           />
         ) : (
           <span style={{ color: C.textDim, fontSize: 10 }}>—</span>
@@ -416,9 +378,8 @@ function CommitHeader({
                 {totalPrevMs != null && (
                   <DeltaBadge
                     current={totalMs}
-                    prev={totalPrevMs}
+                    baseline={totalPrevMs}
                     unit="ms"
-                    C={C}
                   />
                 )}
               </div>

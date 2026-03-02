@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::{ExitCode, Stdio};
 use std::sync::atomic::{AtomicI32, Ordering};
 
+use guppy::platform::{EnabledTernary, PlatformSpec};
 use wezel_types::{CrateTopo, PheromoneOutput, Profile};
 
 /// Cargo subcommands that trigger a build.
@@ -170,10 +171,29 @@ fn extract_graph(cargo: &Path) -> Vec<CrateTopo> {
         Err(_) => return Vec::new(),
     };
 
+    let platform = match PlatformSpec::build_target() {
+        Ok(p) => p,
+        Err(_) => return Vec::new(),
+    };
+
     let workspace_names: std::collections::HashSet<&str> =
         graph.workspace().iter().map(|pkg| pkg.name()).collect();
 
-    // Walk transitively from workspace members to collect all reachable packages.
+    let is_active_on_current_platform = |link: &guppy::graph::PackageLink<'_>| {
+        matches!(
+            link.normal().status().enabled_on(&platform),
+            EnabledTernary::Enabled
+        ) || matches!(
+            link.build().status().enabled_on(&platform),
+            EnabledTernary::Enabled
+        ) || matches!(
+            link.dev().status().enabled_on(&platform),
+            EnabledTernary::Enabled
+        )
+    };
+
+    // Walk transitively from workspace members, following only links active on
+    // the current build platform.
     let mut visited = std::collections::HashSet::new();
     let mut queue: std::collections::VecDeque<guppy::graph::PackageMetadata> =
         graph.workspace().iter().collect();
@@ -182,7 +202,7 @@ fn extract_graph(cargo: &Path) -> Vec<CrateTopo> {
         if !visited.insert(pkg.name().to_string()) {
             continue;
         }
-        for link in pkg.direct_links() {
+        for link in pkg.direct_links().filter(&is_active_on_current_platform) {
             let dep_name = link.to().name().to_string();
             if !visited.contains(&dep_name) {
                 queue.push_back(link.to());
@@ -197,9 +217,10 @@ fn extract_graph(cargo: &Path) -> Vec<CrateTopo> {
             Some(p) => p,
             None => continue,
         };
-        // Only include deps that are themselves in our visited set.
+        // Only include deps that are in our visited set and active on the current platform.
         let deps: Vec<String> = pkg
             .direct_links()
+            .filter(&is_active_on_current_platform)
             .filter(|link| visited.contains(link.to().name()))
             .map(|link| link.to().name().to_string())
             .collect();

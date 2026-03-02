@@ -14,6 +14,7 @@ import { useKeyboardNav } from "../lib/useKeyboardNav";
 
 const EMPTY_RUNS: {
   user: string;
+  platform: string;
   timestamp: string;
   commit: string;
   buildTimeMs: number;
@@ -339,6 +340,11 @@ export function DetailView({
           >
             {scenario.profile}
           </Badge>
+          {scenario.platform && (
+            <Badge color={C.cyan} bg={C.cyan + "18"}>
+              {scenario.platform}
+            </Badge>
+          )}
           {scenario.pinned && (
             <span style={{ fontSize: 10, color: C.accent }}>📌 tracked</span>
           )}

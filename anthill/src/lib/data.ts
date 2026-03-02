@@ -16,6 +16,7 @@ export interface CrateTopo {
 
 export interface Run {
   user: string;
+  platform: string;
   timestamp: string;
   commit: string;
   buildTimeMs: number;
@@ -26,6 +27,7 @@ export interface Scenario {
   id: number;
   name: string;
   profile: "dev" | "release";
+  platform?: string;
   pinned: boolean;
   graph: CrateTopo[];
   runs: Run[];

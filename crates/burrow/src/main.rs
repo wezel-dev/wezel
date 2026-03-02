@@ -27,7 +27,7 @@ async fn scenario_to_json(
     id: i64,
     include_graph: bool,
 ) -> Result<Option<Value>, StatusCode> {
-    let row = sqlx::query("SELECT id, name, profile, pinned FROM scenarios WHERE id = ?")
+    let row = sqlx::query("SELECT id, name, profile, pinned, platform FROM scenarios WHERE id = ?")
         .bind(id)
         .fetch_optional(pool)
         .await
@@ -41,17 +41,19 @@ async fn scenario_to_json(
     let name: String = row.get("name");
     let profile: String = row.get("profile");
     let pinned: bool = row.get("pinned");
+    let platform: Option<String> = row.get("platform");
 
     let mut obj = json!({
         "id": sid,
         "name": name,
         "profile": profile,
         "pinned": pinned,
+        "platform": platform,
     });
 
     // Attach runs
     let run_rows = sqlx::query(
-        "SELECT user, timestamp, commit_short, build_time_ms, dirty_crates_json \
+        "SELECT user, platform, timestamp, commit_short, build_time_ms, dirty_crates_json \
          FROM runs WHERE scenario_id = ? ORDER BY timestamp",
     )
     .bind(sid)
@@ -66,6 +68,7 @@ async fn scenario_to_json(
             let dirty: Value = serde_json::from_str(&dirty_str).unwrap_or(json!([]));
             json!({
                 "user": r.get::<String, _>("user"),
+                "platform": r.get::<String, _>("platform"),
                 "timestamp": r.get::<String, _>("timestamp"),
                 "commit": r.get::<String, _>("commit_short"),
                 "buildTimeMs": r.get::<i64, _>("build_time_ms"),
@@ -339,6 +342,7 @@ async fn ingest_events(
             .get("durationMs")
             .and_then(|v| v.as_u64())
             .unwrap_or(0);
+        let run_platform = event.get("platform").and_then(|v| v.as_str()).unwrap_or("");
 
         // Find or create project
         let name = upstream.rsplit('/').next().unwrap_or(upstream);
@@ -388,6 +392,8 @@ async fn ingest_events(
             .map(|a| a.iter().filter_map(|v| v.as_str()).collect())
             .unwrap_or_default();
 
+        let scenario_platform: Option<&str> = pheromone.get("platform").and_then(|v| v.as_str());
+
         let scenario_name = if packages.is_empty() {
             format!("{tool} {command}")
         } else {
@@ -395,22 +401,35 @@ async fn ingest_events(
         };
 
         // Find or create scenario
-        let scenario_id: i64 = match sqlx::query_as::<_, (i64,)>(
-            "SELECT id FROM scenarios WHERE project_id = ? AND name = ? AND profile = ?",
-        )
-        .bind(project_id)
-        .bind(&scenario_name)
-        .bind(profile)
-        .fetch_optional(&pool)
-        .await
+        let scenario_id: i64 = match if let Some(sp) = scenario_platform {
+            sqlx::query_as::<_, (i64,)>(
+                "SELECT id FROM scenarios WHERE project_id = ? AND name = ? AND profile = ? AND platform = ?",
+            )
+            .bind(project_id)
+            .bind(&scenario_name)
+            .bind(profile)
+            .bind(sp)
+            .fetch_optional(&pool)
+            .await
+        } else {
+            sqlx::query_as::<_, (i64,)>(
+                "SELECT id FROM scenarios WHERE project_id = ? AND name = ? AND profile = ? AND platform IS NULL",
+            )
+            .bind(project_id)
+            .bind(&scenario_name)
+            .bind(profile)
+            .fetch_optional(&pool)
+            .await
+        }
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         {
             Some((id,)) => id,
             None => {
-                sqlx::query("INSERT INTO scenarios (project_id, name, profile) VALUES (?, ?, ?)")
+                sqlx::query("INSERT INTO scenarios (project_id, name, profile, platform) VALUES (?, ?, ?, ?)")
                     .bind(project_id)
                     .bind(&scenario_name)
                     .bind(profile)
+                    .bind(scenario_platform)
                     .execute(&pool)
                     .await
                     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
@@ -438,11 +457,12 @@ async fn ingest_events(
         let dirty_json = serde_json::to_string(&dirty_crates).unwrap_or_else(|_| "[]".into());
 
         sqlx::query(
-            "INSERT INTO runs (scenario_id, user, timestamp, commit_short, build_time_ms, dirty_crates_json) \
-             VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO runs (scenario_id, user, platform, timestamp, commit_short, build_time_ms, dirty_crates_json) \
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(scenario_id)
         .bind(user)
+        .bind(run_platform)
         .bind(timestamp)
         .bind(commit_short)
         .bind(duration_ms as i64)

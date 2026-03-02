@@ -377,6 +377,7 @@ fn emit_output(parsed: &ParsedArgs, dirty_crates: Vec<String>, graph: Vec<CrateT
     let output = PheromoneOutput {
         tool: "cargo".into(),
         command: parsed.command.clone(),
+        platform: PheromoneOutput::detect_platform(),
         profile: Some(parsed.profile),
         packages: parsed.packages.clone(),
         dirty_crates,

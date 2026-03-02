@@ -79,6 +79,79 @@ fn normalize_upstream(url: &str) -> String {
     s.trim_end_matches(".git").to_string()
 }
 
+fn detect_platform() -> String {
+    let os = std::env::consts::OS;
+    let arch = std::env::consts::ARCH;
+
+    let os_version = detect_os_version().unwrap_or_default();
+    let chip = detect_chip().unwrap_or_else(|| arch.to_string());
+
+    let os_name = match os {
+        "macos" => "macOS",
+        "linux" => "Linux",
+        "windows" => "Windows",
+        other => other,
+    };
+
+    if os_version.is_empty() {
+        format!("{os_name}, {chip}")
+    } else {
+        format!("{os_name} {os_version}, {chip}")
+    }
+}
+
+fn detect_os_version() -> Option<String> {
+    match std::env::consts::OS {
+        "macos" => {
+            let out = std::process::Command::new("sw_vers")
+                .arg("-productVersion")
+                .stderr(std::process::Stdio::null())
+                .output()
+                .ok()?;
+            let v = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if v.is_empty() { None } else { Some(v) }
+        }
+        "linux" => {
+            // Try /etc/os-release
+            let content = std::fs::read_to_string("/etc/os-release").ok()?;
+            for line in content.lines() {
+                if let Some(rest) = line.strip_prefix("PRETTY_NAME=") {
+                    return Some(rest.trim_matches('"').to_string());
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
+fn detect_chip() -> Option<String> {
+    match std::env::consts::OS {
+        "macos" => {
+            let out = std::process::Command::new("sysctl")
+                .arg("-n")
+                .arg("machdep.cpu.brand_string")
+                .stderr(std::process::Stdio::null())
+                .output()
+                .ok()?;
+            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if s.is_empty() { None } else { Some(s) }
+        }
+        "linux" => {
+            let content = std::fs::read_to_string("/proc/cpuinfo").ok()?;
+            for line in content.lines() {
+                if line.starts_with("model name") {
+                    if let Some(val) = line.split(':').nth(1) {
+                        return Some(val.trim().to_string());
+                    }
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
 fn read_pheromone_output(path: &std::path::Path) -> Option<PheromoneOutput> {
     let content = std::fs::read_to_string(path).ok()?;
     serde_json::from_str(&content).ok()
@@ -169,6 +242,7 @@ fn exec_cmd(args: &[String]) -> anyhow::Result<ExitCode> {
         commit: detect_commit(),
         cwd: cwd.display().to_string(),
         user: whoami::username(),
+        platform: detect_platform(),
         timestamp,
         duration_ms,
         exit_code,

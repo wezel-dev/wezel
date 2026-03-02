@@ -169,7 +169,7 @@ export default function ScenariosPage() {
           style={{
             display: "grid",
             gridTemplateColumns:
-              "minmax(140px, 3fr) 50px minmax(80px, 1fr) 56px",
+              "minmax(140px, 3fr) 50px 70px minmax(80px, 1fr) 56px",
             gap: 6,
             padding: "4px 12px",
             fontSize: 9,
@@ -183,6 +183,7 @@ export default function ScenariosPage() {
         >
           <span>Command</span>
           <span>Prof.</span>
+          <span>Platform</span>
           <span>Runs</span>
           <span style={{ textAlign: "center" }}>Track</span>
         </div>
@@ -229,7 +230,7 @@ export default function ScenariosPage() {
                 style={{
                   display: "grid",
                   gridTemplateColumns:
-                    "minmax(140px, 3fr) 50px minmax(80px, 1fr) 56px",
+                    "minmax(140px, 3fr) 50px 70px minmax(80px, 1fr) 56px",
                   gap: 6,
                   padding: "6px 12px",
                   alignItems: "center",
@@ -285,6 +286,18 @@ export default function ScenariosPage() {
                 >
                   {s.profile === "dev" ? "dev" : "rel"}
                 </Badge>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontFamily: MONO,
+                    color: s.platform ? C.textMid : C.textDim,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {s.platform ?? "—"}
+                </span>
                 <FreqBar value={freq} max={maxFreq} />
                 <div style={{ display: "flex", justifyContent: "center" }}>
                   <button

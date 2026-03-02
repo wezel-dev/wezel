@@ -37,6 +37,7 @@ pub struct CrateTopo {
 #[serde(rename_all = "camelCase")]
 pub struct Run {
     pub user: String,
+    pub platform: String,
     pub timestamp: String,
     pub commit: String,
     pub build_time_ms: u64,
@@ -58,6 +59,8 @@ pub struct Scenario {
     pub id: u64,
     pub name: String,
     pub profile: Profile,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub platform: Option<String>,
     pub pinned: bool,
     pub graph: Vec<CrateTopo>,
     pub runs: Vec<Run>,
@@ -131,6 +134,9 @@ pub struct PheromoneOutput {
     pub tool: String,
     /// The normalized subcommand (e.g. "build", "test", "check").
     pub command: String,
+    /// Coarse scenario-level platform (e.g. "macOS"), if set by the pheromone.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub platform: Option<String>,
     /// The detected profile, if any.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub profile: Option<Profile>,
@@ -148,6 +154,26 @@ pub struct PheromoneOutput {
     pub extra: serde_json::Value,
 }
 
+impl PheromoneOutput {
+    /// Known coarse platform identifiers for scenario distinction.
+    pub const PLATFORM_MACOS: &str = "macOS";
+    pub const PLATFORM_LINUX: &str = "Linux";
+    pub const PLATFORM_WINDOWS: &str = "Windows";
+    pub const PLATFORM_FREEBSD: &str = "FreeBSD";
+
+    /// Returns the coarse platform string for the current OS, or `None` if
+    /// the OS is not recognised.
+    pub fn detect_platform() -> Option<String> {
+        match std::env::consts::OS {
+            "macos" => Some(Self::PLATFORM_MACOS.into()),
+            "linux" => Some(Self::PLATFORM_LINUX.into()),
+            "windows" => Some(Self::PLATFORM_WINDOWS.into()),
+            "freebsd" => Some(Self::PLATFORM_FREEBSD.into()),
+            _ => None,
+        }
+    }
+}
+
 /// A complete build event persisted by the CLI to `~/.wezel/events/`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -162,6 +188,8 @@ pub struct BuildEvent {
     pub cwd: String,
     /// OS user who ran the build.
     pub user: String,
+    /// Full machine spec detected by the CLI (always present).
+    pub platform: String,
     /// ISO-8601 timestamp of when the build started.
     pub timestamp: String,
     /// Wall-clock duration of the build in milliseconds.

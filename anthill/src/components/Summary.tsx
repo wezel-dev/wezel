@@ -125,6 +125,19 @@ export function Summary({
         />
       </div>
 
+      {selectedRuns.length > 0 &&
+        selectedRuns[0].platform &&
+        selectedRuns.every((r) => r.platform === selectedRuns[0].platform) && (
+          <>
+            <div style={{ height: 1, background: C.border }} />
+            <Stat
+              label="Platform"
+              value={selectedRuns[0].platform}
+              color={C.cyan}
+            />
+          </>
+        )}
+
       <div style={{ height: 1, background: C.border }} />
 
       {/* Hottest crates */}

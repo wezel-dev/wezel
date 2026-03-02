@@ -74,6 +74,15 @@ async fn migrate(pool: &SqlitePool) -> sqlx::Result<()> {
     )
     .execute(pool)
     .await?;
+
+    // Migrations — add platform columns (idempotent, errors ignored if cols exist)
+    let _ = sqlx::query("ALTER TABLE scenarios ADD COLUMN platform TEXT")
+        .execute(pool)
+        .await;
+    let _ = sqlx::query("ALTER TABLE runs ADD COLUMN platform TEXT NOT NULL DEFAULT ''")
+        .execute(pool)
+        .await;
+
     Ok(())
 }
 

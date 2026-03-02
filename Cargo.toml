@@ -29,6 +29,7 @@ tokio = { version = "1", features = ["full"] }
 tower-http = { version = "0.6", features = ["cors", "trace"] }
 tracing-subscriber = "0.3"
 which = "7"
+url = "2"
 
 # The profile that 'dist' will build with
 [profile.dist]

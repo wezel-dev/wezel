@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Instant;
 
-use cmd::{alias_cmd, setup_cmd};
+use cmd::{alias_cmd, health_cmd, setup_cmd};
 use flush::flush_events;
 use wezel_types::{BuildEvent, PheromoneOutput};
 
@@ -297,6 +297,8 @@ enum Command {
         #[arg(long)]
         burrow_url: Option<String>,
     },
+    /// Check wezel health: pheromones, config, burrow connectivity.
+    Health,
     /// Run a tool, recording pre/post build events.
     Exec {
         /// The tool and its arguments (use `--` before them).
@@ -318,6 +320,13 @@ fn main() -> ExitCode {
             handler,
             remove,
         } => match alias_cmd(name.as_deref(), handler.as_deref(), remove) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("wezel: {e}");
+                ExitCode::FAILURE
+            }
+        },
+        Command::Health => match health_cmd() {
             Ok(()) => ExitCode::SUCCESS,
             Err(e) => {
                 eprintln!("wezel: {e}");

@@ -2687,6 +2687,7 @@ dependencies = [
  "serde_json",
  "toml",
  "ureq",
+ "url",
  "uuid",
  "wezel_types",
  "whoami",

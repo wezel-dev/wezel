@@ -576,4 +576,28 @@ mod tests {
             "Compiling foo"
         );
     }
+
+    #[test]
+    fn parse_install_defaults_release() {
+        let args: Vec<String> = vec!["install".into(), "ripgrep".into()];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(parsed.command, "install");
+        assert_eq!(parsed.profile, Profile::Release);
+    }
+
+    #[test]
+    fn parse_install_debug_flag() {
+        let args: Vec<String> = vec!["install".into(), "--debug".into(), "ripgrep".into()];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(parsed.command, "install");
+        assert_eq!(parsed.profile, Profile::Dev);
+    }
+
+    #[test]
+    fn parse_install_explicit_profile() {
+        let args: Vec<String> = vec!["install".into(), "--profile=dev".into(), "ripgrep".into()];
+        let parsed = parse_args(&args).unwrap();
+        assert_eq!(parsed.command, "install");
+        assert_eq!(parsed.profile, Profile::Dev);
+    }
 }

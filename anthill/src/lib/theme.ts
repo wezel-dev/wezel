@@ -2,7 +2,11 @@ import { createContext, useContext } from "react";
 
 // ── Heat color functions ─────────────────────────────────────────────────────
 
-export type HeatFn = (heat: number) => { border: string; bg: string; text: string };
+export type HeatFn = (heat: number) => {
+  border: string;
+  bg: string;
+  text: string;
+};
 
 export const warmHeat: HeatFn = (heat) => {
   if (heat >= 80) return { border: "#c27458", bg: "#2c1e18", text: "#d4a090" };

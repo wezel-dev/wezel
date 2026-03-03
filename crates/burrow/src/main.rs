@@ -11,8 +11,11 @@ use axum::{
 };
 use clap::Parser;
 use models::*;
+use reqwest::Client;
+use serde::Deserialize;
 use serde_json::Value;
 use sqlx::PgPool;
+use std::sync::{Mutex, OnceLock};
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
@@ -31,6 +34,161 @@ fn ise<E: std::fmt::Debug>(_: E) -> StatusCode {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+static GITHUB_COMMIT_CACHE: OnceLock<Mutex<HashMap<String, GithubCommitJson>>> = OnceLock::new();
+
+fn github_commit_cache() -> &'static Mutex<HashMap<String, GithubCommitJson>> {
+    GITHUB_COMMIT_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn github_owner_repo(upstream: &str) -> Option<(String, String)> {
+    let trimmed = upstream.trim().trim_end_matches('/');
+
+    // Normalize common schemes.
+    let no_scheme = trimmed
+        .strip_prefix("https://")
+        .or_else(|| trimmed.strip_prefix("http://"))
+        .or_else(|| trimmed.strip_prefix("ssh://"))
+        .or_else(|| trimmed.strip_prefix("git://"))
+        .unwrap_or(trimmed);
+
+    // Support git@github.com:org/repo(.git) style.
+    let normalized = if let Some(rest) = no_scheme.strip_prefix("git@") {
+        rest.replacen(':', "/", 1)
+    } else {
+        no_scheme.to_string()
+    };
+
+    let host_rest = normalized.strip_prefix("github.com/")?;
+    let mut parts = host_rest.split('/');
+
+    let owner = parts.next()?.trim();
+    let repo_raw = parts.next()?.trim();
+
+    if owner.is_empty() || repo_raw.is_empty() {
+        return None;
+    }
+
+    let repo = repo_raw.strip_suffix(".git").unwrap_or(repo_raw).trim();
+    if repo.is_empty() {
+        return None;
+    }
+
+    Some((owner.to_string(), repo.to_string()))
+}
+
+fn github_cache_key(owner: &str, repo: &str, sha: &str) -> String {
+    format!("{owner}/{repo}:{sha}")
+}
+
+async fn fetch_github_commit(
+    client: &Client,
+    owner: &str,
+    repo: &str,
+    sha: &str,
+) -> ApiResult<GithubCommitJson> {
+    let url = format!("https://api.github.com/repos/{owner}/{repo}/commits/{sha}");
+    let mut request = client.get(url).header("User-Agent", "wezel-burrow");
+
+    if let Ok(token) = std::env::var("GITHUB_TOKEN") {
+        let token = token.trim();
+        if !token.is_empty() {
+            request = request.bearer_auth(token);
+        }
+    }
+
+    let response = request.send().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+    let status = response.status();
+
+    if !status.is_success() {
+        let code = StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
+        return Err(code);
+    }
+
+    let body: Value = response.json().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+
+    let full_sha = body
+        .get("sha")
+        .and_then(|v| v.as_str())
+        .unwrap_or(sha)
+        .to_string();
+    let short_sha = full_sha.chars().take(7).collect::<String>();
+
+    let author = body
+        .get("author")
+        .and_then(|v| v.get("login"))
+        .and_then(|v| v.as_str())
+        .or_else(|| {
+            body.get("commit")
+                .and_then(|v| v.get("author"))
+                .and_then(|v| v.get("name"))
+                .and_then(|v| v.as_str())
+        })
+        .unwrap_or("unknown")
+        .to_string();
+
+    let message = body
+        .get("commit")
+        .and_then(|v| v.get("message"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    let timestamp = body
+        .get("commit")
+        .and_then(|v| v.get("author"))
+        .and_then(|v| v.get("date"))
+        .and_then(|v| v.as_str())
+        .or_else(|| {
+            body.get("commit")
+                .and_then(|v| v.get("committer"))
+                .and_then(|v| v.get("date"))
+                .and_then(|v| v.as_str())
+        })
+        .unwrap_or("")
+        .to_string();
+
+    let html_url = body
+        .get("html_url")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    Ok(GithubCommitJson {
+        sha: full_sha,
+        short_sha,
+        author,
+        message,
+        timestamp,
+        html_url,
+    })
+}
+
+async fn get_or_fetch_github_commit(
+    client: &Client,
+    owner: &str,
+    repo: &str,
+    sha: &str,
+) -> ApiResult<GithubCommitJson> {
+    let key = github_cache_key(owner, repo, sha);
+
+    if let Some(cached) = github_commit_cache()
+        .lock()
+        .map_err(ise)?
+        .get(&key)
+        .cloned()
+    {
+        return Ok(cached);
+    }
+
+    let commit = fetch_github_commit(client, owner, repo, sha).await?;
+    github_commit_cache()
+        .lock()
+        .map_err(ise)?
+        .insert(key, commit.clone());
+
+    Ok(commit)
+}
 
 async fn build_graph(pool: &PgPool, scenario_id: i64) -> ApiResult<Vec<GraphNodeJson>> {
     let nodes = sqlx::query_as::<_, GraphNodeRow>(
@@ -447,6 +605,95 @@ async fn get_commits(State(pool): State<PgPool>) -> ApiResult<Json<Vec<CommitJso
     Ok(Json(out))
 }
 
+async fn get_commits_p(
+    Path((project_id,)): Path<(i64,)>,
+    State(pool): State<PgPool>,
+) -> ApiResult<Json<Vec<CommitJson>>> {
+    let commits = sqlx::query_as::<_, Commit>(
+        "SELECT id, sha, short_sha, author, message, timestamp, status \
+         FROM commits WHERE project_id = $1 ORDER BY timestamp",
+    )
+    .bind(project_id)
+    .fetch_all(&pool)
+    .await
+    .map_err(ise)?;
+
+    if commits.is_empty() {
+        return Ok(Json(vec![]));
+    }
+
+    let commit_ids: Vec<i64> = commits.iter().map(|c| c.id).collect();
+
+    let measurements = sqlx::query_as::<_, Measurement>(
+        "SELECT id, commit_id, name, kind, status, value, prev_value, unit \
+         FROM measurements WHERE commit_id = ANY($1) ORDER BY id",
+    )
+    .bind(&commit_ids)
+    .fetch_all(&pool)
+    .await
+    .map_err(ise)?;
+
+    let m_ids: Vec<i64> = measurements.iter().map(|m| m.id).collect();
+
+    let details = sqlx::query_as::<_, MeasurementDetail>(
+        "SELECT measurement_id, name, value, prev_value \
+         FROM measurement_details WHERE measurement_id = ANY($1) ORDER BY id",
+    )
+    .bind(&m_ids)
+    .fetch_all(&pool)
+    .await
+    .map_err(ise)?;
+
+    let mut detail_map: HashMap<i64, Vec<MeasurementDetailJson>> = HashMap::new();
+    for d in details {
+        detail_map
+            .entry(d.measurement_id)
+            .or_default()
+            .push(MeasurementDetailJson {
+                name: d.name,
+                value: d.value,
+                prev_value: d.prev_value,
+            });
+    }
+
+    let mut measurements_by_commit: HashMap<i64, Vec<MeasurementJson>> = HashMap::new();
+    for m in measurements {
+        measurements_by_commit
+            .entry(m.commit_id)
+            .or_default()
+            .push(MeasurementJson {
+                id: m.id,
+                name: m.name,
+                kind: m.kind,
+                status: m.status,
+                value: m.value,
+                prev_value: m.prev_value,
+                unit: m.unit,
+                detail: detail_map.remove(&m.id).unwrap_or_default(),
+            });
+    }
+
+    let out: Vec<CommitJson> = commits
+        .into_iter()
+        .map(|c| CommitJson {
+            sha: c.sha,
+            short_sha: c.short_sha,
+            author: c.author,
+            message: c.message,
+            timestamp: c.timestamp,
+            status: c.status,
+            measurements: measurements_by_commit.remove(&c.id).unwrap_or_default(),
+        })
+        .collect();
+
+    Ok(Json(out))
+}
+
+#[derive(Deserialize)]
+struct ScheduleCommitBody {
+    sha: Option<String>,
+}
+
 async fn get_commit(
     Path(sha): Path<String>,
     State(pool): State<PgPool>,
@@ -455,10 +702,10 @@ async fn get_commit(
 }
 
 async fn get_commit_p(
-    Path((_pid, sha)): Path<(i64, String)>,
+    Path((project_id, sha)): Path<(i64, String)>,
     State(pool): State<PgPool>,
 ) -> ApiResult<Json<CommitJson>> {
-    get_commit_inner(&sha, &pool).await
+    get_commit_inner_p(project_id, &sha, &pool).await
 }
 
 async fn get_commit_inner(sha: &str, pool: &PgPool) -> ApiResult<Json<CommitJson>> {
@@ -474,6 +721,104 @@ async fn get_commit_inner(sha: &str, pool: &PgPool) -> ApiResult<Json<CommitJson
         Some((id,)) => Ok(Json(commit_to_json(pool, id).await?)),
         None => Err(StatusCode::NOT_FOUND),
     }
+}
+
+async fn get_commit_inner_p(
+    project_id: i64,
+    sha: &str,
+    pool: &PgPool,
+) -> ApiResult<Json<CommitJson>> {
+    let row: Option<(i64,)> = sqlx::query_as(
+        "SELECT id FROM commits WHERE project_id = $1 AND (sha = $2 OR short_sha = $3)",
+    )
+    .bind(project_id)
+    .bind(sha)
+    .bind(sha)
+    .fetch_optional(pool)
+    .await
+    .map_err(ise)?;
+
+    match row {
+        Some((id,)) => Ok(Json(commit_to_json(pool, id).await?)),
+        None => Err(StatusCode::NOT_FOUND),
+    }
+}
+
+async fn get_github_commit_p(
+    Path((project_id, sha)): Path<(i64, String)>,
+    State(pool): State<PgPool>,
+) -> ApiResult<Json<GithubCommitJson>> {
+    let project =
+        sqlx::query_as::<_, Project>("SELECT id, name, upstream FROM projects WHERE id = $1")
+            .bind(project_id)
+            .fetch_optional(&pool)
+            .await
+            .map_err(ise)?
+            .ok_or(StatusCode::NOT_FOUND)?;
+
+    let (owner, repo) = github_owner_repo(&project.upstream).ok_or(StatusCode::BAD_REQUEST)?;
+    let client = Client::new();
+    let commit = get_or_fetch_github_commit(&client, &owner, &repo, &sha).await?;
+    Ok(Json(commit))
+}
+
+async fn schedule_commit_p(
+    Path((project_id,)): Path<(i64,)>,
+    State(pool): State<PgPool>,
+    Json(body): Json<ScheduleCommitBody>,
+) -> ApiResult<(StatusCode, Json<CommitJson>)> {
+    let Some(sha_raw) = body.sha else {
+        return Err(StatusCode::BAD_REQUEST);
+    };
+    let sha = sha_raw.trim();
+    if sha.is_empty() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let project =
+        sqlx::query_as::<_, Project>("SELECT id, name, upstream FROM projects WHERE id = $1")
+            .bind(project_id)
+            .fetch_optional(&pool)
+            .await
+            .map_err(ise)?
+            .ok_or(StatusCode::NOT_FOUND)?;
+
+    let existing: Option<(i64,)> = sqlx::query_as(
+        "SELECT id FROM commits WHERE project_id = $1 AND (sha = $2 OR short_sha = $3) LIMIT 1",
+    )
+    .bind(project_id)
+    .bind(sha)
+    .bind(sha)
+    .fetch_optional(&pool)
+    .await
+    .map_err(ise)?;
+
+    if let Some((id,)) = existing {
+        return Ok((StatusCode::OK, Json(commit_to_json(&pool, id).await?)));
+    }
+
+    let (owner, repo) = github_owner_repo(&project.upstream).ok_or(StatusCode::BAD_REQUEST)?;
+    let client = Client::new();
+    let gh = get_or_fetch_github_commit(&client, &owner, &repo, sha).await?;
+
+    let commit_row: (i64,) = sqlx::query_as(
+        "INSERT INTO commits (project_id, sha, short_sha, author, message, timestamp, status) \
+         VALUES ($1, $2, $3, $4, $5, $6, 'not-started') RETURNING id",
+    )
+    .bind(project_id)
+    .bind(&gh.sha)
+    .bind(&gh.short_sha)
+    .bind(&gh.author)
+    .bind(&gh.message)
+    .bind(&gh.timestamp)
+    .fetch_one(&pool)
+    .await
+    .map_err(ise)?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(commit_to_json(&pool, commit_row.0).await?),
+    ))
 }
 
 async fn get_users(State(pool): State<PgPool>) -> ApiResult<Json<Vec<String>>> {
@@ -768,10 +1113,17 @@ async fn main() {
             "/api/projects/{project_id}/scenarios/{id}/pin",
             patch(toggle_pin_p),
         )
-        .route("/api/projects/{project_id}/commits", get(get_commits))
+        .route(
+            "/api/projects/{project_id}/commits",
+            get(get_commits_p).post(schedule_commit_p),
+        )
         .route(
             "/api/projects/{project_id}/commits/{sha}",
             get(get_commit_p),
+        )
+        .route(
+            "/api/projects/{project_id}/github/commits/{sha}",
+            get(get_github_commit_p),
         )
         .route("/api/projects/{project_id}/users", get(get_users))
         .route("/api/overview", get(get_overview))

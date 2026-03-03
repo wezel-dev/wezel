@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useKeyboardNav } from "../lib/useKeyboardNav";
 import {
   useParams,
@@ -16,6 +16,8 @@ import {
   Circle,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
+  Play,
 } from "lucide-react";
 import { useTheme } from "../lib/theme";
 import { MONO, fmtValue, fmtTime } from "../lib/format";
@@ -24,7 +26,8 @@ import {
   type Measurement,
   type MeasurementStatus,
 } from "../lib/data";
-import { useCommits } from "../lib/hooks";
+import { useCommits, useGithubCommit } from "../lib/hooks";
+import { useProject } from "../lib/useProject";
 import { Badge } from "../components/Badge";
 import { DeltaBadge } from "../components/DeltaBadge";
 
@@ -470,12 +473,22 @@ export default function CommitPage() {
   const { sha } = useParams();
   const { C } = useTheme();
   const navigate = useNavigate();
+  const { pApi } = useProject();
   const { commits } = useCommits();
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
 
   const commit = useMemo(
     () => commits.find((c) => c.shortSha === sha || c.sha === sha) ?? null,
     [sha, commits],
   );
+
+  const ghLookupSha = commit?.sha ?? sha;
+  const {
+    githubCommit,
+    loading: ghLoading,
+    error: ghError,
+  } = useGithubCommit(ghLookupSha);
 
   const commitIdx = useMemo(
     () => (commit ? commits.indexOf(commit) : -1),
@@ -506,7 +519,6 @@ export default function CommitPage() {
 
   useKeyboardNav(keyMap);
 
-  // Group measurements by kind for visual separation
   const grouped = useMemo(() => {
     if (!commit) return [];
     const groups = new Map<string, Measurement[]>();
@@ -518,7 +530,34 @@ export default function CommitPage() {
     return Array.from(groups.entries());
   }, [commit]);
 
-  if (!commit) {
+  const ghMessage = githubCommit?.message?.trim() ?? "";
+  const ghTitle = ghMessage ? ghMessage.split("\n")[0] : "";
+  const ghBody = ghMessage.includes("\n")
+    ? ghMessage.slice(ghMessage.indexOf("\n") + 1).trim()
+    : "";
+  const messageTitle =
+    ghTitle || commit?.message || (sha ? `commit ${sha}` : "commit");
+  const messageBody = ghBody || (!ghTitle ? (commit?.message ?? "") : "");
+  const metaAuthor = githubCommit?.author ?? commit?.author;
+  const metaTime = githubCommit?.timestamp ?? commit?.timestamp;
+
+  const targetSha = githubCommit?.sha ?? commit?.sha ?? sha;
+
+  const onSchedule = async () => {
+    if (!targetSha || scheduling) return;
+    setScheduling(true);
+    setScheduleError(null);
+    try {
+      const created = await pApi.scheduleCommit(targetSha);
+      navigate(`/commit/${created.shortSha}`);
+    } catch (e) {
+      setScheduleError(String(e));
+    } finally {
+      setScheduling(false);
+    }
+  };
+
+  if (!commit && !githubCommit && !ghLoading) {
     return (
       <div
         style={{
@@ -639,68 +678,202 @@ export default function CommitPage() {
           style={{
             maxWidth: 860,
             margin: "0 auto",
-            border: `1px solid ${C.border}`,
-            borderRadius: 6,
-            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
           }}
         >
-          <CommitHeader commit={commit} C={C} />
-
-          {/* Table header */}
+          {/* GitHub metadata panel */}
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "18px 1fr 70px 56px 110px",
+              border: `1px solid ${C.border}`,
+              borderRadius: 6,
+              background: C.surface,
+              padding: "12px 14px",
+              display: "flex",
+              flexDirection: "column",
               gap: 8,
-              padding: "6px 12px",
-              fontSize: 8,
-              fontWeight: 700,
-              color: C.textDim,
-              textTransform: "uppercase",
-              letterSpacing: 0.8,
-              borderBottom: `1px solid ${C.border}`,
-              background: C.surface2,
             }}
           >
-            <span />
-            <span>Measurement</span>
-            <span style={{ textAlign: "right" }}>Value</span>
-            <span>Unit</span>
-            <span>Δ prev</span>
-          </div>
-
-          {/* Grouped measurement rows */}
-          {grouped.map(([kind, measurements], gi) => (
-            <div key={kind}>
-              {grouped.length > 1 && (
-                <div
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <GitCommit size={14} color={C.accent} />
+              <span
+                style={{
+                  fontSize: 12,
+                  fontFamily: MONO,
+                  color: C.accent,
+                  fontWeight: 700,
+                }}
+              >
+                {githubCommit?.shortSha ?? commit?.shortSha ?? sha}
+              </span>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>
+              {messageTitle}
+            </div>
+            {messageBody && (
+              <div
+                style={{
+                  whiteSpace: "pre-wrap",
+                  color: C.textMid,
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                }}
+              >
+                {messageBody}
+              </div>
+            )}
+            {(metaAuthor || metaTime) && (
+              <div style={{ fontSize: 10, fontFamily: MONO, color: C.textDim }}>
+                {metaAuthor ? `by ${metaAuthor}` : ""}
+                {metaAuthor && metaTime ? " · " : ""}
+                {metaTime ? fmtTime(metaTime) : ""}
+              </div>
+            )}
+            {ghError && (
+              <div style={{ fontSize: 10, fontFamily: MONO, color: C.red }}>
+                GitHub metadata unavailable: {ghError}
+              </div>
+            )}
+            {ghLoading && (
+              <div style={{ fontSize: 10, fontFamily: MONO, color: C.textDim }}>
+                loading GitHub metadata…
+              </div>
+            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {githubCommit?.htmlUrl && (
+                <a
+                  href={githubCommit.htmlUrl}
+                  target="_blank"
+                  rel="noreferrer"
                   style={{
-                    padding: "5px 12px",
-                    fontSize: 9,
-                    fontWeight: 700,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    textDecoration: "none",
+                    fontSize: 10,
                     fontFamily: MONO,
-                    color: C.textDim,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.8,
-                    background: C.surface,
-                    borderBottom: `1px solid ${C.border}`,
-                    borderTop: gi > 0 ? `1px solid ${C.border}` : undefined,
+                    color: C.textMid,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 4,
+                    padding: "4px 8px",
+                    background: C.surface2,
                   }}
                 >
-                  {kind}
-                </div>
+                  <ExternalLink size={11} />
+                  View diff on GitHub
+                </a>
               )}
-              {measurements.map((m) => (
-                <MeasurementRow
-                  key={m.id}
-                  m={m}
-                  C={C}
-                  commitSha={commit.shortSha}
-                  navigate={navigate}
-                />
+              <button
+                onClick={onSchedule}
+                disabled={scheduling || !targetSha}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 10,
+                  fontFamily: MONO,
+                  color: scheduling || !targetSha ? C.textDim : C.text,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 4,
+                  padding: "4px 8px",
+                  background: C.surface2,
+                  cursor: scheduling || !targetSha ? "default" : "pointer",
+                }}
+              >
+                <Play size={11} />
+                {scheduling ? "Scheduling..." : "Schedule Forager run"}
+              </button>
+            </div>
+            {scheduleError && (
+              <div style={{ fontSize: 10, fontFamily: MONO, color: C.red }}>
+                failed to schedule run: {scheduleError}
+              </div>
+            )}
+          </div>
+
+          {/* Forager panel */}
+          {commit ? (
+            <div
+              style={{
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                overflow: "hidden",
+              }}
+            >
+              <CommitHeader commit={commit} C={C} />
+
+              {/* Table header */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "18px 1fr 70px 56px 110px",
+                  gap: 8,
+                  padding: "6px 12px",
+                  fontSize: 8,
+                  fontWeight: 700,
+                  color: C.textDim,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.8,
+                  borderBottom: `1px solid ${C.border}`,
+                  background: C.surface2,
+                }}
+              >
+                <span />
+                <span>Measurement</span>
+                <span style={{ textAlign: "right" }}>Value</span>
+                <span>Unit</span>
+                <span>Δ prev</span>
+              </div>
+
+              {/* Grouped measurement rows */}
+              {grouped.map(([kind, measurements], gi) => (
+                <div key={kind}>
+                  {grouped.length > 1 && (
+                    <div
+                      style={{
+                        padding: "5px 12px",
+                        fontSize: 9,
+                        fontWeight: 700,
+                        fontFamily: MONO,
+                        color: C.textDim,
+                        textTransform: "uppercase",
+                        letterSpacing: 0.8,
+                        background: C.surface,
+                        borderBottom: `1px solid ${C.border}`,
+                        borderTop: gi > 0 ? `1px solid ${C.border}` : undefined,
+                      }}
+                    >
+                      {kind}
+                    </div>
+                  )}
+                  {measurements.map((m) => (
+                    <MeasurementRow
+                      key={m.id}
+                      m={m}
+                      C={C}
+                      commitSha={commit.shortSha}
+                      navigate={navigate}
+                    />
+                  ))}
+                </div>
               ))}
             </div>
-          ))}
+          ) : (
+            <div
+              style={{
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                background: C.surface,
+                padding: "14px 16px",
+                color: C.textDim,
+                fontSize: 11,
+                fontFamily: MONO,
+              }}
+            >
+              No Forager measurements yet for this commit.
+            </div>
+          )}
         </div>
       </div>
 

@@ -179,3 +179,17 @@ pub struct OverviewJson {
     #[serde(rename = "latestCommitStatus")]
     pub latest_commit_status: Option<String>,
 }
+
+// ── GitHub proxy ─────────────────────────────────────────────────────────────
+
+#[derive(Clone, Serialize)]
+pub struct GithubCommitJson {
+    pub sha: String,
+    #[serde(rename = "shortSha")]
+    pub short_sha: String,
+    pub author: String,
+    pub message: String,
+    pub timestamp: String,
+    #[serde(rename = "htmlUrl")]
+    pub html_url: String,
+}

@@ -19,6 +19,8 @@ export const nullApi: ProjectApi = {
   togglePin: () => Promise.reject("no project"),
   commits: () => Promise.reject("no project"),
   commit: () => Promise.reject("no project"),
+  githubCommit: () => Promise.reject("no project"),
+  scheduleCommit: () => Promise.reject("no project"),
   users: () => Promise.reject("no project"),
 };
 

@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useProject } from "./useProject";
-import type { Overview, ScenarioSummary } from "./api";
+import type { Overview, ScenarioSummary, GithubCommit } from "./api";
 import type { Scenario, ForagerCommit } from "./data";
 
 const EMPTY_SCENARIOS: ScenarioSummary[] = [];
 const EMPTY_COMMITS: ForagerCommit[] = [];
 const EMPTY_USERS: string[] = [];
+const EMPTY_GITHUB_COMMIT: GithubCommit | null = null;
 const EMPTY_OVERVIEW: Overview = {
   scenarioCount: 0,
   trackedCount: 0,
@@ -111,6 +112,19 @@ export function useCommit(sha: string | undefined) {
     () => (sha ? pApi.commit(sha) : Promise.reject("no sha")),
     [sha, current?.id],
   );
+}
+
+export function useGithubCommit(sha: string | undefined) {
+  const { pApi, current } = useProject();
+  const result = useAsync(
+    () => (sha ? pApi.githubCommit(sha) : Promise.reject("no sha")),
+    [sha, current?.id],
+  );
+  return {
+    githubCommit: result.data ?? EMPTY_GITHUB_COMMIT,
+    loading: !!sha && result.loading,
+    error: result.error,
+  };
 }
 
 export function useUsers() {

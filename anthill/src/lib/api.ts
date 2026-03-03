@@ -1,5 +1,14 @@
 import type { Scenario, ForagerCommit, Project } from "./data";
 
+export interface GithubCommit {
+  sha: string;
+  shortSha: string;
+  author: string;
+  message: string;
+  timestamp: string;
+  htmlUrl: string;
+}
+
 export interface Overview {
   scenarioCount: number;
   trackedCount: number;
@@ -47,6 +56,10 @@ function projectApi(projectId: number) {
     togglePin: (id: number) => patch<Scenario>(`${p}/scenarios/${id}/pin`),
     commits: () => get<ForagerCommit[]>(`${p}/commits`),
     commit: (sha: string) => get<ForagerCommit>(`${p}/commits/${sha}`),
+    githubCommit: (sha: string) =>
+      get<GithubCommit>(`${p}/github/commits/${sha}`),
+    scheduleCommit: (sha: string) =>
+      post<ForagerCommit>(`${p}/commits`, { sha }),
     users: () => get<string[]>(`${p}/users`),
   };
 }

@@ -222,11 +222,7 @@ export default function Shell() {
                   scenarios
                 </Link>
                 <Link
-                  to={
-                    overview.latestCommitShortSha
-                      ? `/commit/${overview.latestCommitShortSha}`
-                      : "/"
-                  }
+                  to="/commits"
                   style={{
                     display: "flex",
                     alignItems: "center",

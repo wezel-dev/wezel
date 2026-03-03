@@ -260,15 +260,20 @@ export function RunList({
                   ...colStyle(2),
                   color: C.pink,
                   fontSize: 9,
-                  cursor: "pointer",
+                  cursor: run.commit ? "pointer" : "default",
                   textDecoration:
-                    hoveredCommit === rowIdx ? "underline" : "none",
+                    hoveredCommit === rowIdx && run.commit
+                      ? "underline"
+                      : "none",
                 }}
                 onClick={(e) => {
+                  if (!run.commit) return;
                   e.stopPropagation();
                   navigate(`/commit/${run.commit}`);
                 }}
-                onMouseEnter={() => setHoveredCommit(rowIdx)}
+                onMouseEnter={() => {
+                  if (run.commit) setHoveredCommit(rowIdx);
+                }}
                 onMouseLeave={() => setHoveredCommit(null)}
               >
                 {run.commit ? run.commit.slice(0, 7) : ""}

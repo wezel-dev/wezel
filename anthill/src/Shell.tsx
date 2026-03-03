@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import { Workflow, GitCommit, ChevronDown, Plus } from "lucide-react";
+import { GitCommit, ChevronDown, Plus } from "lucide-react";
 import { ThemeCtx, THEMES, THEME_ORDER, type ThemeKey } from "./lib/theme";
 import { MONO, SANS } from "./lib/format";
 import { useOverview } from "./lib/hooks";
@@ -88,7 +88,7 @@ export default function Shell() {
                 textDecoration: "none",
               }}
             >
-              <Workflow size={18} color={C.accent} strokeWidth={2.5} />
+              <img src="/wezel.svg" width={18} height={18} alt="wezel" />
               <span
                 style={{
                   fontSize: 15,

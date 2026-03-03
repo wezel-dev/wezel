@@ -140,10 +140,10 @@ fn detect_chip() -> Option<String> {
         "linux" => {
             let content = std::fs::read_to_string("/proc/cpuinfo").ok()?;
             for line in content.lines() {
-                if line.starts_with("model name") {
-                    if let Some(val) = line.split(':').nth(1) {
-                        return Some(val.trim().to_string());
-                    }
+                if line.starts_with("model name")
+                    && let Some(val) = line.split(':').nth(1)
+                {
+                    return Some(val.trim().to_string());
                 }
             }
             None

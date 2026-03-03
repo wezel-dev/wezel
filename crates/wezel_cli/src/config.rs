@@ -71,12 +71,12 @@ fn load(project_config_path: &Path) -> Option<Config> {
     if global_path.is_file() {
         log::debug!("merging global config from {}", global_path.display());
         // Read as GlobalConfig first so we only pick up valid global keys.
-        if let Ok(contents) = fs::read_to_string(&global_path) {
-            if let Ok(global) = toml::from_str::<GlobalConfig>(&contents) {
-                // Only merge username (the only global-scoped key).
-                if let Some(ref u) = global.username {
-                    figment = figment.merge(Serialized::default("username", u));
-                }
+        if let Ok(contents) = fs::read_to_string(&global_path)
+            && let Ok(global) = toml::from_str::<GlobalConfig>(&contents)
+        {
+            // Only merge username (the only global-scoped key).
+            if let Some(ref u) = global.username {
+                figment = figment.merge(Serialized::default("username", u));
             }
         }
     }

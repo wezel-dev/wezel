@@ -93,10 +93,10 @@ impl Shell {
 
 pub fn ensure_shell_hook(shell: Shell) -> anyhow::Result<()> {
     for rc in shell.rc_paths() {
-        if shell == Shell::Fish {
-            if let Some(parent) = rc.parent() {
-                fs::create_dir_all(parent)?;
-            }
+        if shell == Shell::Fish
+            && let Some(parent) = rc.parent()
+        {
+            fs::create_dir_all(parent)?;
         }
 
         let contents = if rc.exists() {

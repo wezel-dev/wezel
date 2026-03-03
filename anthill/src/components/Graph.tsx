@@ -429,10 +429,13 @@ function usePanZoom(containerRef: React.RefObject<HTMLDivElement | null>) {
         return;
       }
 
-      const scale = Math.min(
-        (cw * (1 - padding * 2)) / gw,
-        (ch * (1 - padding * 2)) / gh,
-        2,
+      const scale = Math.max(
+        0.05,
+        Math.min(
+          (cw * (1 - padding * 2)) / gw,
+          (ch * (1 - padding * 2)) / gh,
+          2,
+        ),
       );
       const cx = minX + gw / 2;
       const cy = minY + gh / 2;

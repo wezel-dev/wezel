@@ -1,4 +1,5 @@
 mod db;
+mod models;
 
 use axum::{
     Json, Router,
@@ -7,8 +8,9 @@ use axum::{
     routing::{get, patch, post},
 };
 use clap::Parser;
+use models::*;
 use serde_json::{Value, json};
-use sqlx::{Row, SqlitePool};
+use sqlx::PgPool;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
@@ -20,276 +22,219 @@ struct Cli {
     port: u16,
 }
 
+type ApiResult<T> = Result<T, StatusCode>;
+
+fn ise<E: std::fmt::Debug>(_: E) -> StatusCode {
+    StatusCode::INTERNAL_SERVER_ERROR
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async fn scenario_to_json(
-    pool: &SqlitePool,
+    pool: &PgPool,
     id: i64,
     include_graph: bool,
-) -> Result<Option<Value>, StatusCode> {
-    let row = sqlx::query("SELECT id, name, profile, pinned, platform FROM scenarios WHERE id = ?")
-        .bind(id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let Some(row) = row else {
+) -> ApiResult<Option<ScenarioJson>> {
+    let Some(s) = sqlx::query_as::<_, Scenario>(
+        "SELECT id, name, profile, pinned, platform FROM scenarios WHERE id = $1",
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await
+    .map_err(ise)?
+    else {
         return Ok(None);
     };
 
-    let sid: i64 = row.get("id");
-    let name: String = row.get("name");
-    let profile: String = row.get("profile");
-    let pinned: bool = row.get("pinned");
-    let platform: Option<String> = row.get("platform");
-
-    let mut obj = json!({
-        "id": sid,
-        "name": name,
-        "profile": profile,
-        "pinned": pinned,
-        "platform": platform,
-    });
-
-    // Attach runs
-    let run_rows = sqlx::query(
-        "SELECT user, platform, timestamp, commit_short, build_time_ms, dirty_crates_json \
-         FROM runs WHERE scenario_id = ? ORDER BY timestamp",
+    let runs = sqlx::query_as::<_, Run>(
+        "SELECT \"user\", platform, timestamp, commit_short, build_time_ms, dirty_crates_json \
+         FROM runs WHERE scenario_id = $1 ORDER BY timestamp",
     )
-    .bind(sid)
+    .bind(s.id)
     .fetch_all(pool)
     .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(ise)?;
 
-    let runs_json: Vec<Value> = run_rows
-        .into_iter()
-        .map(|r| {
-            let dirty_str: String = r.get("dirty_crates_json");
-            let dirty: Value = serde_json::from_str(&dirty_str).unwrap_or(json!([]));
-            json!({
-                "user": r.get::<String, _>("user"),
-                "platform": r.get::<String, _>("platform"),
-                "timestamp": r.get::<String, _>("timestamp"),
-                "commit": r.get::<String, _>("commit_short"),
-                "buildTimeMs": r.get::<i64, _>("build_time_ms"),
-                "dirtyCrates": dirty,
-            })
-        })
-        .collect();
-    obj["runs"] = json!(runs_json);
+    let graph = if include_graph {
+        sqlx::query_as::<_, GraphRow>(
+            "SELECT graph_json FROM scenario_graphs WHERE scenario_id = $1",
+        )
+        .bind(s.id)
+        .fetch_optional(pool)
+        .await
+        .map_err(ise)?
+        .and_then(|r| serde_json::from_str(&r.graph_json).ok())
+    } else {
+        None
+    };
 
-    if include_graph {
-        let graph_row = sqlx::query("SELECT graph_json FROM scenario_graphs WHERE scenario_id = ?")
-            .bind(sid)
-            .fetch_optional(pool)
-            .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-        let graph: Value = graph_row
-            .and_then(|r| {
-                let g: String = r.get("graph_json");
-                serde_json::from_str(&g).ok()
-            })
-            .unwrap_or(json!([]));
-        obj["graph"] = graph;
-    }
-
-    Ok(Some(obj))
+    Ok(Some(ScenarioJson {
+        id: s.id,
+        name: s.name,
+        profile: s.profile,
+        pinned: s.pinned,
+        platform: s.platform,
+        runs: runs.into_iter().map(Run::to_json).collect(),
+        graph,
+    }))
 }
 
-async fn commit_to_json(pool: &SqlitePool, commit_id: i64) -> Result<Value, StatusCode> {
-    let c = sqlx::query(
-        "SELECT sha, short_sha, author, message, timestamp, status FROM commits WHERE id = ?",
+async fn commit_to_json(pool: &PgPool, commit_id: i64) -> ApiResult<CommitJson> {
+    let c = sqlx::query_as::<_, Commit>(
+        "SELECT sha, short_sha, author, message, timestamp, status FROM commits WHERE id = $1",
     )
     .bind(commit_id)
     .fetch_one(pool)
     .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(ise)?;
 
-    let m_rows = sqlx::query(
+    let measurements = sqlx::query_as::<_, Measurement>(
         "SELECT id, name, kind, status, value, prev_value, unit, detail_json \
-         FROM measurements WHERE commit_id = ? ORDER BY id",
+         FROM measurements WHERE commit_id = $1 ORDER BY id",
     )
     .bind(commit_id)
     .fetch_all(pool)
     .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(ise)?;
 
-    let measurements: Vec<Value> = m_rows
-        .into_iter()
-        .map(|r| {
-            let mut m = json!({
-                "id": r.get::<i64, _>("id"),
-                "name": r.get::<String, _>("name"),
-                "kind": r.get::<String, _>("kind"),
-                "status": r.get::<String, _>("status"),
-            });
-            if let Ok(v) = r.try_get::<f64, _>("value") {
-                m["value"] = json!(v);
-            }
-            if let Ok(v) = r.try_get::<f64, _>("prev_value") {
-                m["prevValue"] = json!(v);
-            }
-            if let Ok(v) = r.try_get::<String, _>("unit") {
-                m["unit"] = json!(v);
-            }
-            if let Ok(d) = r.try_get::<String, _>("detail_json")
-                && let Ok(parsed) = serde_json::from_str::<Value>(&d)
-            {
-                m["detail"] = parsed;
-            }
-            m
-        })
-        .collect();
-
-    Ok(json!({
-        "sha": c.get::<String, _>("sha"),
-        "shortSha": c.get::<String, _>("short_sha"),
-        "author": c.get::<String, _>("author"),
-        "message": c.get::<String, _>("message"),
-        "timestamp": c.get::<String, _>("timestamp"),
-        "status": c.get::<String, _>("status"),
-        "measurements": measurements,
-    }))
+    Ok(CommitJson {
+        sha: c.sha,
+        short_sha: c.short_sha,
+        author: c.author,
+        message: c.message,
+        timestamp: c.timestamp,
+        status: c.status,
+        measurements: measurements.into_iter().map(Measurement::to_json).collect(),
+    })
 }
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
 
 async fn create_project(
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Json(body): Json<Value>,
-) -> Result<(StatusCode, Json<Value>), StatusCode> {
+) -> ApiResult<(StatusCode, Json<Project>)> {
     let name = body["name"].as_str().ok_or(StatusCode::BAD_REQUEST)?;
     let upstream = body["upstream"].as_str().ok_or(StatusCode::BAD_REQUEST)?;
 
-    let result = sqlx::query("INSERT INTO projects (name, upstream) VALUES (?, ?)")
-        .bind(name)
-        .bind(upstream)
-        .execute(&pool)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let project = sqlx::query_as::<_, Project>(
+        "INSERT INTO projects (name, upstream) VALUES ($1, $2) RETURNING id, name, upstream",
+    )
+    .bind(name)
+    .bind(upstream)
+    .fetch_one(&pool)
+    .await
+    .map_err(ise)?;
 
-    let id = result.last_insert_rowid();
-    Ok((
-        StatusCode::CREATED,
-        Json(json!({ "id": id, "name": name, "upstream": upstream })),
-    ))
+    Ok((StatusCode::CREATED, Json(project)))
 }
 
-async fn get_projects(State(pool): State<SqlitePool>) -> Result<Json<Value>, StatusCode> {
-    let rows = sqlx::query("SELECT id, name, upstream FROM projects ORDER BY id")
-        .fetch_all(&pool)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let projects: Vec<Value> = rows
-        .into_iter()
-        .map(|r| {
-            json!({
-                "id": r.get::<i64, _>("id"),
-                "name": r.get::<String, _>("name"),
-                "upstream": r.get::<String, _>("upstream"),
-            })
-        })
-        .collect();
-    Ok(Json(json!(projects)))
-}
-
-async fn get_overview(State(pool): State<SqlitePool>) -> Result<Json<Value>, StatusCode> {
-    let sc: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM scenarios")
-        .fetch_one(&pool)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let tc: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM scenarios WHERE pinned = 1")
-        .fetch_one(&pool)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let latest =
-        sqlx::query("SELECT short_sha, status FROM commits ORDER BY timestamp DESC LIMIT 1")
-            .fetch_optional(&pool)
+async fn get_projects(State(pool): State<PgPool>) -> ApiResult<Json<Vec<Project>>> {
+    let projects =
+        sqlx::query_as::<_, Project>("SELECT id, name, upstream FROM projects ORDER BY id")
+            .fetch_all(&pool)
             .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(Json(json!({
-        "scenarioCount": sc.0,
-        "trackedCount": tc.0,
-        "latestCommitShortSha": latest.as_ref().map(|r| r.get::<String, _>("short_sha")),
-        "latestCommitStatus": latest.as_ref().map(|r| r.get::<String, _>("status")),
-    })))
+            .map_err(ise)?;
+    Ok(Json(projects))
 }
 
-async fn get_scenarios(State(pool): State<SqlitePool>) -> Result<Json<Value>, StatusCode> {
-    let id_rows: Vec<(i64,)> = sqlx::query_as("SELECT id FROM scenarios ORDER BY id")
+async fn get_overview(State(pool): State<PgPool>) -> ApiResult<Json<OverviewJson>> {
+    let (scenario_count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM scenarios")
+        .fetch_one(&pool)
+        .await
+        .map_err(ise)?;
+
+    let (tracked_count,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM scenarios WHERE pinned = TRUE")
+            .fetch_one(&pool)
+            .await
+            .map_err(ise)?;
+
+    let latest = sqlx::query_as::<_, LatestCommit>(
+        "SELECT short_sha, status FROM commits ORDER BY timestamp DESC LIMIT 1",
+    )
+    .fetch_optional(&pool)
+    .await
+    .map_err(ise)?;
+
+    Ok(Json(OverviewJson {
+        scenario_count,
+        tracked_count,
+        latest_commit_short_sha: latest.as_ref().map(|l| l.short_sha.clone()),
+        latest_commit_status: latest.map(|l| l.status),
+    }))
+}
+
+async fn get_scenarios(State(pool): State<PgPool>) -> ApiResult<Json<Vec<ScenarioJson>>> {
+    let ids: Vec<(i64,)> = sqlx::query_as("SELECT id FROM scenarios ORDER BY id")
         .fetch_all(&pool)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(ise)?;
 
-    let mut scenarios = Vec::new();
-    for (id,) in id_rows {
+    let mut out = Vec::with_capacity(ids.len());
+    for (id,) in ids {
         if let Some(s) = scenario_to_json(&pool, id, false).await? {
-            scenarios.push(s);
+            out.push(s);
         }
     }
-    Ok(Json(json!(scenarios)))
+    Ok(Json(out))
 }
 
 async fn get_scenario(
     Path(id): Path<i64>,
-    State(pool): State<SqlitePool>,
-) -> Result<Json<Value>, StatusCode> {
-    match scenario_to_json(&pool, id, true).await? {
-        Some(s) => Ok(Json(s)),
-        None => Err(StatusCode::NOT_FOUND),
-    }
+    State(pool): State<PgPool>,
+) -> ApiResult<Json<ScenarioJson>> {
+    scenario_to_json(&pool, id, true)
+        .await?
+        .map(Json)
+        .ok_or(StatusCode::NOT_FOUND)
 }
 
 async fn get_scenario_p(
     Path((_pid, id)): Path<(i64, i64)>,
-    State(pool): State<SqlitePool>,
-) -> Result<Json<Value>, StatusCode> {
-    match scenario_to_json(&pool, id, true).await? {
-        Some(s) => Ok(Json(s)),
-        None => Err(StatusCode::NOT_FOUND),
-    }
+    State(pool): State<PgPool>,
+) -> ApiResult<Json<ScenarioJson>> {
+    scenario_to_json(&pool, id, true)
+        .await?
+        .map(Json)
+        .ok_or(StatusCode::NOT_FOUND)
 }
 
-async fn get_commits(State(pool): State<SqlitePool>) -> Result<Json<Value>, StatusCode> {
-    let id_rows: Vec<(i64,)> = sqlx::query_as("SELECT id FROM commits ORDER BY timestamp")
+async fn get_commits(State(pool): State<PgPool>) -> ApiResult<Json<Vec<CommitJson>>> {
+    let ids: Vec<(i64,)> = sqlx::query_as("SELECT id FROM commits ORDER BY timestamp")
         .fetch_all(&pool)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(ise)?;
 
-    let mut commits = Vec::new();
-    for (id,) in id_rows {
-        commits.push(commit_to_json(&pool, id).await?);
+    let mut out = Vec::with_capacity(ids.len());
+    for (id,) in ids {
+        out.push(commit_to_json(&pool, id).await?);
     }
-    Ok(Json(json!(commits)))
+    Ok(Json(out))
 }
 
 async fn get_commit(
     Path(sha): Path<String>,
-    State(pool): State<SqlitePool>,
-) -> Result<Json<Value>, StatusCode> {
+    State(pool): State<PgPool>,
+) -> ApiResult<Json<CommitJson>> {
     get_commit_inner(&sha, &pool).await
 }
 
 async fn get_commit_p(
     Path((_pid, sha)): Path<(i64, String)>,
-    State(pool): State<SqlitePool>,
-) -> Result<Json<Value>, StatusCode> {
+    State(pool): State<PgPool>,
+) -> ApiResult<Json<CommitJson>> {
     get_commit_inner(&sha, &pool).await
 }
 
-async fn get_commit_inner(sha: &str, pool: &SqlitePool) -> Result<Json<Value>, StatusCode> {
+async fn get_commit_inner(sha: &str, pool: &PgPool) -> ApiResult<Json<CommitJson>> {
     let row: Option<(i64,)> =
-        sqlx::query_as("SELECT id FROM commits WHERE sha = ? OR short_sha = ?")
+        sqlx::query_as("SELECT id FROM commits WHERE sha = $1 OR short_sha = $2")
             .bind(sha)
             .bind(sha)
             .fetch_optional(pool)
             .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            .map_err(ise)?;
 
     match row {
         Some((id,)) => Ok(Json(commit_to_json(pool, id).await?)),
@@ -297,38 +242,52 @@ async fn get_commit_inner(sha: &str, pool: &SqlitePool) -> Result<Json<Value>, S
     }
 }
 
-async fn get_users(State(pool): State<SqlitePool>) -> Result<Json<Value>, StatusCode> {
-    let rows: Vec<(String,)> = sqlx::query_as("SELECT username FROM users ORDER BY username")
+async fn get_users(State(pool): State<PgPool>) -> ApiResult<Json<Vec<String>>> {
+    let rows: Vec<User> = sqlx::query_as("SELECT username FROM users ORDER BY username")
         .fetch_all(&pool)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let users: Vec<String> = rows.into_iter().map(|(u,)| u).collect();
-    Ok(Json(json!(users)))
+        .map_err(ise)?;
+    Ok(Json(rows.into_iter().map(|u| u.username).collect()))
 }
 
 async fn toggle_pin(
     Path(id): Path<i64>,
-    State(pool): State<SqlitePool>,
-) -> Result<Json<Value>, StatusCode> {
+    State(pool): State<PgPool>,
+) -> ApiResult<Json<ScenarioJson>> {
     toggle_pin_inner(id, &pool).await
 }
 
 async fn toggle_pin_p(
     Path((_pid, id)): Path<(i64, i64)>,
-    State(pool): State<SqlitePool>,
-) -> Result<Json<Value>, StatusCode> {
+    State(pool): State<PgPool>,
+) -> ApiResult<Json<ScenarioJson>> {
     toggle_pin_inner(id, &pool).await
 }
 
+async fn toggle_pin_inner(id: i64, pool: &PgPool) -> ApiResult<Json<ScenarioJson>> {
+    let result = sqlx::query("UPDATE scenarios SET pinned = NOT pinned WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await
+        .map_err(ise)?;
+
+    if result.rows_affected() == 0 {
+        return Err(StatusCode::NOT_FOUND);
+    }
+
+    scenario_to_json(pool, id, true)
+        .await?
+        .map(Json)
+        .ok_or(StatusCode::NOT_FOUND)
+}
+
 async fn ingest_events(
-    State(pool): State<SqlitePool>,
+    State(pool): State<PgPool>,
     Json(events): Json<Vec<Value>>,
-) -> Result<StatusCode, StatusCode> {
+) -> ApiResult<StatusCode> {
     for event in &events {
-        let upstream = match event.get("upstream").and_then(|v| v.as_str()) {
-            Some(u) => u,
-            None => continue,
+        let Some(upstream) = event.get("upstream").and_then(|v| v.as_str()) else {
+            continue;
         };
         let user = event
             .get("user")
@@ -347,28 +306,32 @@ async fn ingest_events(
         // Find or create project
         let name = upstream.rsplit('/').next().unwrap_or(upstream);
         let project_id: i64 =
-            match sqlx::query_as::<_, (i64,)>("SELECT id FROM projects WHERE upstream = ?")
+            match sqlx::query_as::<_, (i64,)>("SELECT id FROM projects WHERE upstream = $1")
                 .bind(upstream)
                 .fetch_optional(&pool)
                 .await
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+                .map_err(ise)?
             {
                 Some((id,)) => id,
-                None => sqlx::query("INSERT INTO projects (name, upstream) VALUES (?, ?)")
+                None => {
+                    let row = sqlx::query_as::<_, IdRow>(
+                        "INSERT INTO projects (name, upstream) VALUES ($1, $2) RETURNING id",
+                    )
                     .bind(name)
                     .bind(upstream)
-                    .execute(&pool)
+                    .fetch_one(&pool)
                     .await
-                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-                    .last_insert_rowid(),
+                    .map_err(ise)?;
+                    row.id
+                }
             };
 
         // Ensure user exists
-        sqlx::query("INSERT OR IGNORE INTO users (username) VALUES (?)")
+        sqlx::query("INSERT INTO users (username) VALUES ($1) ON CONFLICT (username) DO NOTHING")
             .bind(user)
             .execute(&pool)
             .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            .map_err(ise)?;
 
         // Process pheromone data if present
         let Some(pheromone) = event.get("pheromone") else {
@@ -403,7 +366,8 @@ async fn ingest_events(
         // Find or create scenario
         let scenario_id: i64 = match if let Some(sp) = scenario_platform {
             sqlx::query_as::<_, (i64,)>(
-                "SELECT id FROM scenarios WHERE project_id = ? AND name = ? AND profile = ? AND platform = ?",
+                "SELECT id FROM scenarios \
+                 WHERE project_id = $1 AND name = $2 AND profile = $3 AND platform = $4",
             )
             .bind(project_id)
             .bind(&scenario_name)
@@ -413,7 +377,8 @@ async fn ingest_events(
             .await
         } else {
             sqlx::query_as::<_, (i64,)>(
-                "SELECT id FROM scenarios WHERE project_id = ? AND name = ? AND profile = ? AND platform IS NULL",
+                "SELECT id FROM scenarios \
+                 WHERE project_id = $1 AND name = $2 AND profile = $3 AND platform IS NULL",
             )
             .bind(project_id)
             .bind(&scenario_name)
@@ -421,19 +386,22 @@ async fn ingest_events(
             .fetch_optional(&pool)
             .await
         }
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .map_err(ise)?
         {
             Some((id,)) => id,
             None => {
-                sqlx::query("INSERT INTO scenarios (project_id, name, profile, platform) VALUES (?, ?, ?, ?)")
-                    .bind(project_id)
-                    .bind(&scenario_name)
-                    .bind(profile)
-                    .bind(scenario_platform)
-                    .execute(&pool)
-                    .await
-                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-                    .last_insert_rowid()
+                let row = sqlx::query_as::<_, IdRow>(
+                    "INSERT INTO scenarios (project_id, name, profile, platform) \
+                     VALUES ($1, $2, $3, $4) RETURNING id",
+                )
+                .bind(project_id)
+                .bind(&scenario_name)
+                .bind(profile)
+                .bind(scenario_platform)
+                .fetch_one(&pool)
+                .await
+                .map_err(ise)?;
+                row.id
             }
         };
 
@@ -441,14 +409,14 @@ async fn ingest_events(
         if let Some(graph) = pheromone.get("graph") {
             let graph_json = serde_json::to_string(graph).unwrap_or_default();
             sqlx::query(
-                "INSERT INTO scenario_graphs (scenario_id, graph_json) VALUES (?, ?) \
-                 ON CONFLICT(scenario_id) DO UPDATE SET graph_json = excluded.graph_json",
+                "INSERT INTO scenario_graphs (scenario_id, graph_json) VALUES ($1, $2) \
+                 ON CONFLICT (scenario_id) DO UPDATE SET graph_json = EXCLUDED.graph_json",
             )
             .bind(scenario_id)
             .bind(&graph_json)
             .execute(&pool)
             .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            .map_err(ise)?;
         }
 
         // Insert run
@@ -457,8 +425,8 @@ async fn ingest_events(
         let dirty_json = serde_json::to_string(&dirty_crates).unwrap_or_else(|_| "[]".into());
 
         sqlx::query(
-            "INSERT INTO runs (scenario_id, user, platform, timestamp, commit_short, build_time_ms, dirty_crates_json) \
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO runs (scenario_id, \"user\", platform, timestamp, commit_short, build_time_ms, dirty_crates_json) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7)",
         )
         .bind(scenario_id)
         .bind(user)
@@ -469,27 +437,10 @@ async fn ingest_events(
         .bind(&dirty_json)
         .execute(&pool)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(ise)?;
     }
 
     Ok(StatusCode::OK)
-}
-
-async fn toggle_pin_inner(id: i64, pool: &SqlitePool) -> Result<Json<Value>, StatusCode> {
-    let result = sqlx::query("UPDATE scenarios SET pinned = NOT pinned WHERE id = ?")
-        .bind(id)
-        .execute(pool)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    if result.rows_affected() == 0 {
-        return Err(StatusCode::NOT_FOUND);
-    }
-
-    match scenario_to_json(pool, id, true).await? {
-        Some(s) => Ok(Json(s)),
-        None => Err(StatusCode::NOT_FOUND),
-    }
 }
 
 #[tokio::main]
@@ -498,8 +449,10 @@ async fn main() {
     let cli = Cli::parse();
 
     let db_url = db::db_url();
-    println!("Opening database at {db_url}");
-    let pool = db::open(&db_url).await.expect("could not open database");
+    println!("Connecting to database at {db_url}");
+    let pool = db::connect(&db_url)
+        .await
+        .expect("could not connect to database");
 
     let app = Router::new()
         .route("/api/projects", get(get_projects).post(create_project))

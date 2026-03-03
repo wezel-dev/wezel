@@ -149,6 +149,7 @@ export default function Shell() {
                           onClick={() => {
                             setCurrent(p);
                             setProjectOpen(false);
+                            navigate(`/project/${p.id}`);
                           }}
                           style={{
                             display: "block",

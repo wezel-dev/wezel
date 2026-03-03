@@ -434,6 +434,115 @@ async fn get_overview(State(pool): State<PgPool>) -> ApiResult<Json<OverviewJson
     }))
 }
 
+async fn get_overview_p(
+    Path((project_id,)): Path<(i64,)>,
+    State(pool): State<PgPool>,
+) -> ApiResult<Json<OverviewJson>> {
+    let (scenario_count,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM scenarios WHERE project_id = $1")
+            .bind(project_id)
+            .fetch_one(&pool)
+            .await
+            .map_err(ise)?;
+
+    let (tracked_count,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM scenarios WHERE project_id = $1 AND pinned = TRUE")
+            .bind(project_id)
+            .fetch_one(&pool)
+            .await
+            .map_err(ise)?;
+
+    let latest = sqlx::query_as::<_, LatestCommit>(
+        "SELECT short_sha, status FROM commits WHERE project_id = $1 ORDER BY timestamp DESC LIMIT 1",
+    )
+    .bind(project_id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(ise)?;
+
+    Ok(Json(OverviewJson {
+        scenario_count,
+        tracked_count,
+        latest_commit_short_sha: latest.as_ref().map(|l| l.short_sha.clone()),
+        latest_commit_status: latest.map(|l| l.status),
+    }))
+}
+
+async fn get_scenarios_p(
+    Path((project_id,)): Path<(i64,)>,
+    State(pool): State<PgPool>,
+) -> ApiResult<Json<Vec<ScenarioJson>>> {
+    let scenarios = sqlx::query_as::<_, Scenario>(
+        "SELECT id, name, profile, pinned, platform FROM scenarios WHERE project_id = $1 ORDER BY id",
+    )
+    .bind(project_id)
+    .fetch_all(&pool)
+    .await
+    .map_err(ise)?;
+
+    if scenarios.is_empty() {
+        return Ok(Json(vec![]));
+    }
+
+    let scenario_ids: Vec<i64> = scenarios.iter().map(|s| s.id).collect();
+
+    let runs = sqlx::query_as::<_, Run>(
+        "SELECT id, scenario_id, \"user\", platform, timestamp, commit_short, build_time_ms \
+         FROM runs WHERE scenario_id = ANY($1) ORDER BY timestamp",
+    )
+    .bind(&scenario_ids)
+    .fetch_all(&pool)
+    .await
+    .map_err(ise)?;
+
+    let run_ids: Vec<i64> = runs.iter().map(|r| r.id).collect();
+
+    let dirty_crates = sqlx::query_as::<_, DirtyCrate>(
+        "SELECT run_id, crate_name FROM run_dirty_crates \
+         WHERE run_id = ANY($1) ORDER BY crate_name",
+    )
+    .bind(&run_ids)
+    .fetch_all(&pool)
+    .await
+    .map_err(ise)?;
+
+    let mut dirty_map: HashMap<i64, Vec<String>> = HashMap::new();
+    for dc in dirty_crates {
+        dirty_map.entry(dc.run_id).or_default().push(dc.crate_name);
+    }
+
+    let mut runs_by_scenario: HashMap<i64, Vec<RunJson>> = HashMap::new();
+    for r in runs {
+        let crates = dirty_map.remove(&r.id).unwrap_or_default();
+        runs_by_scenario
+            .entry(r.scenario_id)
+            .or_default()
+            .push(RunJson {
+                user: r.user,
+                platform: r.platform,
+                timestamp: r.timestamp,
+                commit: r.commit_short,
+                build_time_ms: r.build_time_ms,
+                dirty_crates: crates,
+            });
+    }
+
+    let out: Vec<ScenarioJson> = scenarios
+        .into_iter()
+        .map(|s| ScenarioJson {
+            id: s.id,
+            name: s.name,
+            profile: s.profile,
+            pinned: s.pinned,
+            platform: s.platform,
+            runs: runs_by_scenario.remove(&s.id).unwrap_or_default(),
+            graph: None,
+        })
+        .collect();
+
+    Ok(Json(out))
+}
+
 async fn get_scenarios(State(pool): State<PgPool>) -> ApiResult<Json<Vec<ScenarioJson>>> {
     let scenarios = sqlx::query_as::<_, Scenario>(
         "SELECT id, name, profile, pinned, platform FROM scenarios ORDER BY id",
@@ -1103,8 +1212,8 @@ async fn main() {
 
     let app = Router::new()
         .route("/api/project", get(get_projects).post(create_project))
-        .route("/api/project/{project_id}/overview", get(get_overview))
-        .route("/api/project/{project_id}/scenario", get(get_scenarios))
+        .route("/api/project/{project_id}/overview", get(get_overview_p))
+        .route("/api/project/{project_id}/scenario", get(get_scenarios_p))
         .route(
             "/api/project/{project_id}/scenario/{id}",
             get(get_scenario_p),

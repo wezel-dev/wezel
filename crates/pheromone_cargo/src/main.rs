@@ -376,18 +376,78 @@ fn install_sigwinch_handler(stderr_fd: i32, pty_ctl_fd: i32) {
     }
 }
 
-/// Spawn cargo, forward its stderr to the real stderr, and collect the names
+fn run_cargo_json_mode(
+    cargo: &Path,
+    args: &[String],
+) -> anyhow::Result<(std::process::ExitStatus, Vec<String>)> {
+    let mut cmd = std::process::Command::new(cargo);
+    cmd.args(args);
+    cmd.stdout(Stdio::piped());
+    cmd.stderr(Stdio::inherit());
+
+    let mut child = cmd.spawn()?;
+    let mut out = child.stdout.take().expect("stdout was piped");
+
+    let mut dirty_crates = Vec::new();
+    let mut seen_dirty = HashSet::new();
+    let mut line_buf = Vec::new();
+    let mut out_err = std::io::stderr();
+    let mut buf = [0u8; 8192];
+
+    loop {
+        let n = match out.read(&mut buf) {
+            Ok(0) => break,
+            Ok(n) => n,
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(e) => return Err(e.into()),
+        };
+
+        let chunk = &buf[..n];
+        let _ = out_err.write_all(chunk);
+
+        for &byte in chunk {
+            if byte == b'\n' || byte == b'\r' {
+                if !line_buf.is_empty()
+                    && let Ok(line) = std::str::from_utf8(&line_buf)
+                    && let Some(name) = parse_json_message_dirty_crate(line)
+                    && seen_dirty.insert(name.clone())
+                {
+                    dirty_crates.push(name);
+                }
+                line_buf.clear();
+            } else {
+                line_buf.push(byte);
+            }
+        }
+    }
+
+    if !line_buf.is_empty()
+        && let Ok(line) = std::str::from_utf8(&line_buf)
+        && let Some(name) = parse_json_message_dirty_crate(line)
+        && seen_dirty.insert(name.clone())
+    {
+        dirty_crates.push(name);
+    }
+
+    let status = child.wait()?;
+    Ok((status, dirty_crates))
+}
+
+/// Spawn cargo, forward stderr to the real stderr, and collect the names
 /// of crates that were (re)compiled.
 ///
-/// When our stderr is a terminal we give cargo a PTY as its stderr so it sees a
-/// real terminal — this preserves colors, the progress bar, and \r overwrites
-/// without any flag hacking.  When stderr is *not* a terminal we fall back to a
-/// plain pipe.
+/// In JSON mode, cargo emits machine-readable messages on stdout, so we parse
+/// dirty crates from stdout while still inheriting stderr.
+/// In human mode, we keep the PTY/pipe stderr tee behavior for line parsing.
 fn run_cargo_tee(
     cargo: &Path,
     args: &[String],
     message_format: MessageFormat,
 ) -> anyhow::Result<(std::process::ExitStatus, Vec<String>)> {
+    if matches!(message_format, MessageFormat::Json) {
+        return run_cargo_json_mode(cargo, args);
+    }
+
     let real_stderr = std::io::stderr();
     let is_tty = real_stderr.is_terminal();
 
@@ -449,16 +509,10 @@ fn run_cargo_tee(
             if byte == b'\n' || byte == b'\r' {
                 if !line_buf.is_empty()
                     && let Ok(line) = std::str::from_utf8(&line_buf)
+                    && let Some(name) = parse_compiling_line(line)
+                    && seen_dirty.insert(name.clone())
                 {
-                    let maybe_name = match message_format {
-                        MessageFormat::Human => parse_compiling_line(line),
-                        MessageFormat::Json => parse_json_message_dirty_crate(line),
-                    };
-                    if let Some(name) = maybe_name
-                        && seen_dirty.insert(name.clone())
-                    {
-                        dirty_crates.push(name);
-                    }
+                    dirty_crates.push(name);
                 }
                 line_buf.clear();
             } else {
@@ -467,20 +521,12 @@ fn run_cargo_tee(
         }
     }
 
-    // Trailing content without a final newline.
-
     if !line_buf.is_empty()
         && let Ok(line) = std::str::from_utf8(&line_buf)
+        && let Some(name) = parse_compiling_line(line)
+        && seen_dirty.insert(name.clone())
     {
-        let maybe_name = match message_format {
-            MessageFormat::Human => parse_compiling_line(line),
-            MessageFormat::Json => parse_json_message_dirty_crate(line),
-        };
-        if let Some(name) = maybe_name
-            && seen_dirty.insert(name.clone())
-        {
-            dirty_crates.push(name);
-        }
+        dirty_crates.push(name);
     }
 
     let status = child.wait()?;
@@ -728,5 +774,36 @@ mod tests {
     fn parse_json_non_dirty_reason() {
         let line = r#"{"reason":"build-finished","success":true}"#;
         assert_eq!(parse_json_message_dirty_crate(line), None);
+    }
+
+    #[test]
+    fn parse_json_from_stdout_chunking_simulation() {
+        let lines = [
+            r#"{"reason":"compiler-artifact","package_id":"path+file:///tmp/ws/foo#foo@0.1.0"}"#,
+            r#"{"reason":"build-script-executed","package_id":"registry+https://github.com/rust-lang/crates.io-index#serde_json@1.0.133"}"#,
+            r#"{"reason":"build-finished","success":true}"#,
+        ];
+
+        let mut dirty = Vec::new();
+        let mut seen = HashSet::new();
+        let mut buf = Vec::new();
+
+        let stream = format!("{}\n{}\n{}\n", lines[0], lines[1], lines[2]);
+        for b in stream.as_bytes() {
+            if *b == b'\n' || *b == b'\r' {
+                if !buf.is_empty()
+                    && let Ok(line) = std::str::from_utf8(&buf)
+                    && let Some(name) = parse_json_message_dirty_crate(line)
+                    && seen.insert(name.clone())
+                {
+                    dirty.push(name);
+                }
+                buf.clear();
+            } else {
+                buf.push(*b);
+            }
+        }
+
+        assert_eq!(dirty, vec!["foo".to_string(), "serde_json".to_string()]);
     }
 }

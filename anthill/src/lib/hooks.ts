@@ -19,12 +19,9 @@ interface AsyncState<T> {
   error: string | null;
 }
 
-const DEFAULT_POLL_MS = 5_000;
-
 function useAsync<T>(
   fetcher: () => Promise<T>,
   deps: unknown[] = [],
-  pollMs: number = DEFAULT_POLL_MS,
 ): AsyncState<T> & { refetch: () => void } {
   const [state, setState] = useState<AsyncState<T>>({
     data: null,
@@ -52,34 +49,8 @@ function useAsync<T>(
 
   useEffect(() => {
     doFetch(false);
-    if (pollMs > 0) {
-      let id: ReturnType<typeof setInterval> | null = setInterval(
-        () => doFetch(true),
-        pollMs,
-      );
-
-      const onVisibility = () => {
-        if (document.hidden) {
-          if (id != null) {
-            clearInterval(id);
-            id = null;
-          }
-        } else {
-          doFetch(true);
-          if (id == null) {
-            id = setInterval(() => doFetch(true), pollMs);
-          }
-        }
-      };
-
-      document.addEventListener("visibilitychange", onVisibility);
-      return () => {
-        if (id != null) clearInterval(id);
-        document.removeEventListener("visibilitychange", onVisibility);
-      };
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, refetch, pollMs]);
+  }, [...deps, refetch]);
 
   return { ...state, refetch };
 }

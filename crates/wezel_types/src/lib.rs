@@ -13,7 +13,7 @@ pub struct Project {
     pub id: u64,
     /// Human-readable name, e.g. "wezel" (derived from the repo name).
     pub name: String,
-    /// Canonical upstream URL (e.g. "github.com/wezel-dev/wezel").
+    /// Canonical upstream URL (e.g. "github.com/wezel-build/wezel").
     /// Stripped of protocol and `.git` suffix so that SSH and HTTPS
     /// remotes resolve to the same identity.
     pub upstream: String,

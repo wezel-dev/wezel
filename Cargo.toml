@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/wezel_cli", "crates/wezel_types", "crates/pheromone_cargo", "crates/burrow"]
 
 [workspace.package]
-repository = "https://github.com/wezel-dev/wezel"
+repository = "https://github.com/wezel-build/wezel"
 publish = false
 edition = "2024"
 

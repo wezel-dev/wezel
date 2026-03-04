@@ -4,9 +4,6 @@ import type { CrateTopo } from "../lib/data";
 import type { HeatFn } from "../lib/theme";
 
 // ── Tier definitions ──────────────────────────────────────────────────────────
-// Five fixed-width tiers. Tiers 2-5 carry a pill that lights up when the
-// crate's frequency is in the upper half of that tier's range.
-// e.g. tier 3 covers 21-40%; pill is lit for 31-40%.
 
 interface Tier {
   lo: number;
@@ -23,6 +20,8 @@ const TIERS: Tier[] = [
   { lo: 71, hi: 100, barW: 160, hasPill: true },
 ];
 
+const MAX_BAR_W = TIERS[TIERS.length - 1].barW;
+
 function getTier(heat: number): Tier {
   return TIERS.find((t) => heat <= t.hi) ?? TIERS[TIERS.length - 1];
 }
@@ -36,37 +35,34 @@ function pillOpacity(heat: number, tier: Tier): number {
 
 const ROW_H = 20;
 const ROW_GAP = 4;
-const PILL_H = 3; // thin strip at the bottom of the bar
-const DEP_GAP = 22; // space between dep effective-end and dependent bar-start
+const PILL_H = 3;
+const COL_GAP = 22;
+// horizontal gap between depth columns
 const LEFT_PAD = 16;
-const RIGHT_PAD = 220; // room for name labels
-const TOP_PAD = 28; // room for axis hint
+const TOP_PAD = 28;
 const BOT_PAD = 16;
 const LABEL_PAD = 8;
+const RIGHT_PAD = 220; // space for labels after the last column
 
-// The effective width of a crate's indicator.
-// Used for critical-path X positioning and connection line endpoints.
-function effectiveW(tier: Tier): number {
-  return tier.barW;
-}
-
-// ── Row layout ────────────────────────────────────────────────────────────────
+// ── Row type ──────────────────────────────────────────────────────────────────
 
 interface Row {
   name: string;
-  heat: number; // 0-100
+  heat: number;
   depth: number;
   tier: Tier;
   barX: number;
   y: number;
 }
 
+// ── Layout computation ────────────────────────────────────────────────────────
+
 function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
-  // Only workspace (non-external) crates appear as rows.
+  // Only workspace crates become rows.
   const internal = topo.filter((c) => !c.external);
   const nameSet = new Set(internal.map((c) => c.name));
 
-  // Filter each crate's deps to internal-only.
+  // Deps filtered to workspace-only.
   const depMap = new Map<string, string[]>();
   for (const c of internal) {
     depMap.set(
@@ -75,36 +71,47 @@ function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
     );
   }
 
-  // Iterative topo-depth: depth 0 = crate with no internal deps (foundational).
-  // We run repeated passes until nothing changes; this handles arbitrary graphs
-  // without recursion and degrades gracefully on cycles (cycle members get 0).
-  const depths = new Map<string, number>();
+  // Reverse map: for each crate, which crates consume it (depend on it).
+  const consumersOf = new Map<string, string[]>();
   for (const c of internal) {
-    if ((depMap.get(c.name) ?? []).length === 0) depths.set(c.name, 0);
+    for (const dep of depMap.get(c.name) ?? []) {
+      if (!consumersOf.has(dep)) consumersOf.set(dep, []);
+      consumersOf.get(dep)!.push(c.name);
+    }
   }
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const c of internal) {
-      const deps = depMap.get(c.name) ?? [];
-      if (!deps.every((d) => depths.has(d))) continue;
-      const d =
-        deps.length === 0
-          ? 0
-          : Math.max(...deps.map((d) => depths.get(d)!)) + 1;
-      if (d !== depths.get(c.name)) {
-        depths.set(c.name, d);
-        changed = true;
+
+  // BFS from roots (crates nothing depends on) following dependency edges.
+  // depth[c] = shortest hop-count from any root to c via its dependency chain.
+  // This ensures: depth 0 = the top-level binary (e.g. `zed`),
+  //               depth 1 = its direct deps, depth 2 = their deps, etc.
+  const depths = new Map<string, number>();
+  const queue: string[] = [];
+
+  for (const c of internal) {
+    if ((consumersOf.get(c.name) ?? []).length === 0) {
+      depths.set(c.name, 0);
+      queue.push(c.name);
+    }
+  }
+
+  let qi = 0;
+  while (qi < queue.length) {
+    const name = queue[qi++];
+    const d = depths.get(name)!;
+    for (const dep of depMap.get(name) ?? []) {
+      if (!depths.has(dep)) {
+        depths.set(dep, d + 1);
+        queue.push(dep);
       }
     }
   }
-  // Any node not reached (cycle) gets depth 0.
+
+  // Anything not reached (disconnected sub-graph or cycle) lands at depth 0.
   for (const c of internal) {
     if (!depths.has(c.name)) depths.set(c.name, 0);
   }
 
-  // Primary sort: depth asc (foundational first).
-  // Secondary: heat desc (hottest crates rise to the top of their tier group).
+  // Sort: depth asc (roots first), heat desc within same depth.
   const sorted = [...internal].sort((a, b) => {
     const da = depths.get(a.name) ?? 0;
     const db = depths.get(b.name) ?? 0;
@@ -112,33 +119,39 @@ function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
     return (heat[b.name] ?? 0) - (heat[a.name] ?? 0);
   });
 
-  // Critical-path X: each bar starts after the rightmost effective-end of its
-  // direct deps, mirroring how cargo --timings positions units in time.
-  // High-frequency foundation crates (wider indicators) push dependants right.
-  const barX = new Map<string, number>();
+  // Fixed column positions: each depth level gets a column whose width equals
+  // the widest bar in that level plus COL_GAP.  This keeps columns compact
+  // when most crates are low-frequency, and expands only where needed.
+  const depthMaxBarW = new Map<number, number>();
   for (const c of sorted) {
-    const deps = depMap.get(c.name) ?? [];
-    if (deps.length === 0) {
-      barX.set(c.name, LEFT_PAD);
-    } else {
-      let maxEnd = LEFT_PAD;
-      for (const dep of deps) {
-        const dx = barX.get(dep) ?? LEFT_PAD;
-        const dTier = getTier(heat[dep] ?? 0);
-        maxEnd = Math.max(maxEnd, dx + effectiveW(dTier) + DEP_GAP);
-      }
-      barX.set(c.name, maxEnd);
-    }
+    const d = depths.get(c.name) ?? 0;
+    const w = getTier(heat[c.name] ?? 0).barW;
+    depthMaxBarW.set(d, Math.max(depthMaxBarW.get(d) ?? 0, w));
   }
 
-  return sorted.map((c, i) => ({
-    name: c.name,
-    heat: heat[c.name] ?? 0,
-    depth: depths.get(c.name) ?? 0,
-    tier: getTier(heat[c.name] ?? 0),
-    barX: barX.get(c.name) ?? LEFT_PAD,
-    y: TOP_PAD + i * (ROW_H + ROW_GAP),
-  }));
+  const maxDepth =
+    sorted.length > 0
+      ? Math.max(...sorted.map((c) => depths.get(c.name) ?? 0))
+      : 0;
+
+  const colStart = new Map<number, number>();
+  let x = LEFT_PAD;
+  for (let d = 0; d <= maxDepth; d++) {
+    colStart.set(d, x);
+    x += (depthMaxBarW.get(d) ?? MAX_BAR_W) + COL_GAP;
+  }
+
+  return sorted.map((c, i) => {
+    const depth = depths.get(c.name) ?? 0;
+    return {
+      name: c.name,
+      heat: heat[c.name] ?? 0,
+      depth,
+      tier: getTier(heat[c.name] ?? 0),
+      barX: colStart.get(depth) ?? LEFT_PAD,
+      y: TOP_PAD + i * (ROW_H + ROW_GAP),
+    };
+  });
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -170,13 +183,7 @@ export function BuildTimingsChart({
 
   const rows = useMemo(() => computeRows(topo, heat), [topo, heat]);
 
-  const rowByName = useMemo(() => {
-    const m = new Map<string, Row>();
-    for (const r of rows) m.set(r.name, r);
-    return m;
-  }, [rows]);
-
-  // Internal dep map, rebuilt from topo against the current visible row set.
+  // Dep and reverse-dep maps for building the transitive active set.
   const depMap = useMemo(() => {
     const nameSet = new Set(rows.map((r) => r.name));
     const m = new Map<string, string[]>();
@@ -190,8 +197,7 @@ export function BuildTimingsChart({
     return m;
   }, [topo, rows]);
 
-  // Reverse edges: for each crate, which crates directly depend on it.
-  const dependantsMap = useMemo(() => {
+  const consumersOf = useMemo(() => {
     const m = new Map<string, string[]>();
     for (const [name, deps] of depMap) {
       for (const dep of deps) {
@@ -202,69 +208,43 @@ export function BuildTimingsChart({
     return m;
   }, [depMap]);
 
-  // Hover takes priority over keyboard/click focus for the active highlight.
+  // Hover takes priority over sticky focus.
   const activeSetName = hoveredCrate ?? focusedCrate ?? null;
 
-  // The "active set" = the hovered/focused crate plus every crate reachable
-  // from it transitively in either direction (deps and dependants).
-  // Everything outside this set is dimmed.
+  // Transitive hull: the active crate + all its deps (right) + all its
+  // consumers (left).  Everything outside is dimmed.
   const activeSet = useMemo<Set<string> | null>(() => {
     if (!activeSetName) return null;
     const s = new Set<string>([activeSetName]);
-    // Upstream (deps)
-    const q = [...(depMap.get(activeSetName) ?? [])];
-    while (q.length) {
-      const n = q.shift()!;
+    const qd = [...(depMap.get(activeSetName) ?? [])];
+    while (qd.length) {
+      const n = qd.shift()!;
       if (!s.has(n)) {
         s.add(n);
-        q.push(...(depMap.get(n) ?? []));
+        qd.push(...(depMap.get(n) ?? []));
       }
     }
-    // Downstream (dependants)
-    const q2 = [...(dependantsMap.get(activeSetName) ?? [])];
-    while (q2.length) {
-      const n = q2.shift()!;
+    const qc = [...(consumersOf.get(activeSetName) ?? [])];
+    while (qc.length) {
+      const n = qc.shift()!;
       if (!s.has(n)) {
         s.add(n);
-        q2.push(...(dependantsMap.get(n) ?? []));
+        qc.push(...(consumersOf.get(n) ?? []));
       }
     }
     return s;
-  }, [activeSetName, depMap, dependantsMap]);
+  }, [activeSetName, depMap, consumersOf]);
 
-  // Bezier connection lines shown on hover/focus: one curve per direct dep,
-  // drawn from the dep's effective-end to the active crate's bar-start.
-  const connLines = useMemo(() => {
-    if (!activeSetName) return [];
-    const hovRow = rowByName.get(activeSetName);
-    if (!hovRow) return [];
-    return (depMap.get(activeSetName) ?? []).flatMap((dep) => {
-      const dr = rowByName.get(dep);
-      if (!dr) return [];
-      return [
-        {
-          x1: dr.barX + effectiveW(dr.tier),
-          y1: dr.y + ROW_H / 2,
-          x2: hovRow.barX,
-          y2: hovRow.y + ROW_H / 2,
-        },
-      ];
-    });
-  }, [activeSetName, rowByName, depMap]);
+  const svgW = useMemo(() => {
+    if (rows.length === 0) return 400;
+    return Math.max(...rows.map((r) => r.barX + r.tier.barW)) + RIGHT_PAD;
+  }, [rows]);
 
-  const svgW = useMemo(
-    () =>
-      rows.length === 0
-        ? 400
-        : Math.max(...rows.map((r) => r.barX + effectiveW(r.tier))) + RIGHT_PAD,
-    [rows],
-  );
   const svgH = useMemo(
     () => TOP_PAD + rows.length * (ROW_H + ROW_GAP) + BOT_PAD,
     [rows],
   );
 
-  // Hover: walk up from the event target to find the nearest [data-crate] group.
   const handleMouseOver = useCallback((e: React.MouseEvent) => {
     const el = (e.target as HTMLElement).closest(
       "[data-crate]",
@@ -272,7 +252,6 @@ export function BuildTimingsChart({
     setHoveredCrate(el?.dataset.crate ?? null);
   }, []);
 
-  // Click: plain click = sticky focus; Ctrl/Meta = run filter.
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       const el = (e.target as HTMLElement).closest(
@@ -310,7 +289,7 @@ export function BuildTimingsChart({
         onMouseOver={handleMouseOver}
         onClick={handleClick}
       >
-        {/* Axis hint -------------------------------------------------------- */}
+        {/* Axis hint */}
         <text
           x={LEFT_PAD}
           y={16}
@@ -320,26 +299,10 @@ export function BuildTimingsChart({
           fontWeight={600}
           style={{ letterSpacing: "0.6px" }}
         >
-          ← FOUNDATIONAL · · · CONSUMERS →
+          ← ROOTS · · · FOUNDATIONS →
         </text>
 
-        {/* Bezier lines: direct deps → active crate ------------------------- */}
-        {connLines.map((ln, i) => {
-          const mx = (ln.x1 + ln.x2) / 2;
-          return (
-            <path
-              key={i}
-              d={`M ${ln.x1} ${ln.y1} C ${mx} ${ln.y1} ${mx} ${ln.y2} ${ln.x2} ${ln.y2}`}
-              fill="none"
-              stroke={accentColor ?? "#888"}
-              strokeWidth={1.5}
-              opacity={0.35}
-              style={{ pointerEvents: "none" }}
-            />
-          );
-        })}
-
-        {/* Rows ------------------------------------------------------------- */}
+        {/* Rows */}
         {rows.map((row) => {
           const colors = heatColor(row.heat);
           const isHl = highlightedCrates?.has(row.name) ?? false;
@@ -352,10 +315,9 @@ export function BuildTimingsChart({
           const pillX = row.barX + 1;
           const pillY = row.y + ROW_H - PILL_H - 1;
           const pillW = row.tier.barW - 2;
-          const labelX = row.barX + effectiveW(row.tier) + LABEL_PAD;
+          const labelX = row.barX + row.tier.barW + LABEL_PAD;
           const midY = row.y + ROW_H / 2 + 4;
-
-          const pillAlpha = pillOpacity(row.heat, row.tier);
+          const pAlpha = pillOpacity(row.heat, row.tier);
 
           return (
             <g
@@ -375,8 +337,7 @@ export function BuildTimingsChart({
                 strokeWidth={emphBorder ? 2 : 1}
               />
 
-              {/* Pill (tiers 2-5 only) — thin strip inside bar at the bottom;
-                  opacity scales linearly with position within the tier range */}
+              {/* Pill — thin strip at bottom, opacity = position within tier */}
               {row.tier.hasPill && (
                 <rect
                   x={pillX}
@@ -386,12 +347,12 @@ export function BuildTimingsChart({
                   rx={1}
                   fill={colors.border}
                   stroke="none"
-                  opacity={pillAlpha}
+                  opacity={pAlpha}
                   style={{ pointerEvents: "none" }}
                 />
               )}
 
-              {/* Label: name + exact heat% as a dim tspan */}
+              {/* Label: name + exact heat% */}
               <text
                 x={labelX}
                 y={midY}

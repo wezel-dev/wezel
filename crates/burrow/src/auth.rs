@@ -22,7 +22,7 @@ pub async fn login() -> impl IntoResponse {
     let state = Uuid::new_v4().to_string();
     let client_id = std::env::var("GITHUB_CLIENT_ID").expect("GITHUB_CLIENT_ID not set");
     let url = format!(
-        "https://github.com/login/oauth/authorize?client_id={client_id}&state={state}&scope=read:user"
+        "https://github.com/login/oauth/authorize?client_id={client_id}&state={state}&scope=read:user%20read:org"
     );
     let state_cookie = Cookie::build(("oauth_state", state))
         .http_only(true)
@@ -93,6 +93,30 @@ pub async fn callback(
         .as_str()
         .ok_or(StatusCode::BAD_GATEWAY)?
         .to_string();
+
+    // Check org membership if GITHUB_ORG is set
+    if let Ok(org) = std::env::var("GITHUB_ORG") {
+        let status = http
+            .get(format!("https://api.github.com/orgs/{org}/members/{login}"))
+            .header("Authorization", format!("Bearer {access_token}"))
+            .header("User-Agent", "wezel")
+            .send()
+            .await
+            .map_err(|_| StatusCode::BAD_GATEWAY)?
+            .status();
+
+        if status == reqwest::StatusCode::NOT_FOUND {
+            let frontend_url = std::env::var("FRONTEND_URL")
+                .unwrap_or_else(|_| "http://localhost:5173".to_string());
+            return Ok((
+                jar.remove(Cookie::from("oauth_state")),
+                Redirect::to(&format!("{frontend_url}?error=forbidden")),
+            ));
+        }
+        if !status.is_success() {
+            return Err(StatusCode::BAD_GATEWAY);
+        }
+    }
 
     // Persist session
     let session_id = Uuid::new_v4().to_string();

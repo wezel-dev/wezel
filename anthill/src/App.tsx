@@ -67,9 +67,9 @@ const router = createBrowserRouter([
 ]);
 
 function AuthGate() {
-  const { user, loading } = useAuth();
+  const { user, loading, forbidden } = useAuth();
   if (loading) return null;
-  if (!user) return <LoginPage />;
+  if (!user) return <LoginPage forbidden={forbidden} />;
   return (
     <ProjectProvider>
       <RouterProvider router={router} />

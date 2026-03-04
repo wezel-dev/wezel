@@ -2,7 +2,7 @@ import { Github } from "lucide-react";
 import { authApi } from "../lib/api";
 import { MONO, SANS } from "../lib/format";
 
-export default function LoginPage() {
+export default function LoginPage({ forbidden }: { forbidden?: boolean }) {
   return (
     <div
       style={{
@@ -80,6 +80,23 @@ export default function LoginPage() {
             Authentication is required
           </div>
         </div>
+
+        {forbidden && (
+          <div
+            style={{
+              fontSize: 12,
+              fontFamily: MONO,
+              color: "#e07b39",
+              background: "#2a1a0f",
+              border: "1px solid #5a2e0a",
+              borderRadius: 6,
+              padding: "8px 14px",
+              textAlign: "center",
+            }}
+          >
+            You are not a member of the required GitHub organization.
+          </div>
+        )}
 
         <a
           href={authApi.loginUrl}

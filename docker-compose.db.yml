@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: wezel
-      POSTGRES_PASSWORD: wezel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: wezel
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -16,7 +16,7 @@ services:
 
   burrow:
     environment:
-      DATABASE_URL: postgres://wezel:wezel@db:5432/wezel
+      DATABASE_URL: postgres://wezel:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/wezel
     depends_on:
       db:
         condition: service_healthy

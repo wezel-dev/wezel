@@ -7,6 +7,10 @@ COPY anthill/package.json anthill/package-lock.json ./
 RUN npm ci
 
 COPY anthill/ ./
+
+ARG VITE_BURROW_URL=http://localhost:3000
+ENV VITE_BURROW_URL=${VITE_BURROW_URL}
+
 RUN npm run build
 
 # ── Runtime stage ──────────────────────────────────────────────────────────────

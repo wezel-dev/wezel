@@ -123,9 +123,31 @@ function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
     }
   }
 
-  // Cycle members (not reached by topo-sort) fall back to depth 0.
-  for (const c of internal) {
-    if (!depths.has(c.name)) depths.set(c.name, 0);
+  // Cycle members (not reached by topo-sort): resolve depth from already-placed
+  // neighbours iteratively, then fall back to 0 for pure cycles with no anchor.
+  let cycleNodes = internal.filter((c) => !depths.has(c.name));
+  let prevSize = -1;
+  while (cycleNodes.length > 0 && cycleNodes.length !== prevSize) {
+    prevSize = cycleNodes.length;
+    const stillUnplaced: typeof cycleNodes = [];
+    for (const c of cycleNodes) {
+      const placedDeps = (depMap.get(c.name) ?? []).filter((d) =>
+        depths.has(d),
+      );
+      if (placedDeps.length > 0) {
+        depths.set(
+          c.name,
+          Math.max(...placedDeps.map((d) => (depths.get(d) ?? 0) + 1)),
+        );
+      } else {
+        stillUnplaced.push(c);
+      }
+    }
+    cycleNodes = stillUnplaced;
+  }
+  // Pure cycles with no external anchor fall back to 0.
+  for (const c of cycleNodes) {
+    depths.set(c.name, 0);
   }
 
   // Sort: depth asc (roots first), heat desc within same depth.

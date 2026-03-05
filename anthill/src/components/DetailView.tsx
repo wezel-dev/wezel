@@ -49,7 +49,9 @@ export function DetailView({
     };
   }, [rawScenario, userFilter]);
 
-  const runs = scenario?.runs ?? EMPTY_RUNS;
+  const runs = (scenario?.runs ?? EMPTY_RUNS)
+    .slice()
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
   const graph = scenario?.graph ?? EMPTY_GRAPH;
 
   const { C, heatColor } = useTheme();

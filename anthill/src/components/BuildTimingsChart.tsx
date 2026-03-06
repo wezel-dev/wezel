@@ -20,8 +20,6 @@ const TIERS: Tier[] = [
   { lo: 71, hi: 100, barW: 160, hasPill: true },
 ];
 
-const MAX_BAR_W = TIERS[TIERS.length - 1].barW;
-
 function getTier(heat: number): Tier {
   return TIERS.find((t) => heat <= t.hi) ?? TIERS[TIERS.length - 1];
 }
@@ -36,8 +34,7 @@ function pillOpacity(heat: number, tier: Tier): number {
 const ROW_H = 20;
 const ROW_GAP = 4;
 const PILL_H = 3;
-const COL_GAP = 22;
-// horizontal gap between depth columns
+const BAR_GAP = 6; // horizontal gap between dependent bars
 const LEFT_PAD = 16;
 const TOP_PAD = 28;
 const BOT_PAD = 16;
@@ -49,7 +46,6 @@ const RIGHT_PAD = 220; // space for labels after the last column
 interface Row {
   name: string;
   heat: number;
-  depth: number;
   tier: Tier;
   barX: number;
   y: number;
@@ -58,140 +54,103 @@ interface Row {
 // ── Layout computation ────────────────────────────────────────────────────────
 
 function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
-  // Only workspace crates become rows.
   const internal = topo.filter((c) => !c.external);
+  if (internal.length === 0) return [];
   const nameSet = new Set(internal.map((c) => c.name));
 
-  // Structural deps: normal + build only (dev deps excluded to avoid cycles).
-  // Filtered to workspace-only.
+  // All three edge kinds. depMap[A] = deps of A (things A needs before it can build).
   const depMap = new Map<string, string[]>();
   for (const c of internal) {
-    const structural = [...c.deps, ...(c.buildDeps ?? [])].filter((d) =>
-      nameSet.has(d),
-    );
-    depMap.set(c.name, structural);
+    const all = [
+      ...c.deps,
+      ...(c.buildDeps ?? []),
+      ...(c.devDeps ?? []),
+    ].filter((d) => nameSet.has(d));
+    depMap.set(c.name, [...new Set(all)]);
   }
 
-  // Reverse map: for each crate, which crates consume it (depend on it).
   const consumersOf = new Map<string, string[]>();
-  for (const c of internal) {
-    for (const dep of depMap.get(c.name) ?? []) {
-      if (!consumersOf.has(dep)) consumersOf.set(dep, []);
-      consumersOf.get(dep)!.push(c.name);
-    }
+  for (const c of internal) consumersOf.set(c.name, []);
+  for (const [name, deps] of depMap) {
+    for (const dep of deps) consumersOf.get(dep)!.push(name);
   }
 
-  // Longest-path depth from roots via Kahn's topo-sort + relaxation.
-  //
-  // BFS (shortest path) would put B at depth 1 even when A→C→B exists,
-  // because A also depends on B directly.  We want depth = longest path
-  // from any root, so that B sits one tier below C — reflecting that a
-  // change to B cascades through C before reaching A.
-  //
-  // Algorithm:
-  //   1. Kahn's topo-sort starting from roots (no consumers), following
-  //      dependency edges (root → dep → sub-dep …).
-  //   2. Walk nodes in that order and relax: depth[dep] = max(depth[dep], depth[n]+1).
-
-  // Step 1 – Kahn's topo-sort.
-  const inDeg = new Map<string, number>();
-  for (const c of internal) {
-    inDeg.set(c.name, (consumersOf.get(c.name) ?? []).length);
-  }
-
+  // Kahn's topo-sort seeded from foundations (nodes with no deps).
+  // Produces build order: foundations first, top-level binaries last.
+  const inDeg = new Map(
+    internal.map((c) => [c.name, (depMap.get(c.name) ?? []).length]),
+  );
+  const queue: string[] = internal
+    .filter((c) => inDeg.get(c.name) === 0)
+    .map((c) => c.name);
   const topoOrder: string[] = [];
-  const tq: string[] = [];
-  for (const c of internal) {
-    if (inDeg.get(c.name) === 0) tq.push(c.name);
-  }
-  let tqi = 0;
-  while (tqi < tq.length) {
-    const name = tq[tqi++];
-    topoOrder.push(name);
-    for (const dep of depMap.get(name) ?? []) {
-      const nd = (inDeg.get(dep) ?? 1) - 1;
-      inDeg.set(dep, nd);
-      if (nd === 0) tq.push(dep);
+  let qi = 0;
+  while (qi < queue.length) {
+    const n = queue[qi++];
+    topoOrder.push(n);
+    for (const consumer of consumersOf.get(n) ?? []) {
+      const nd = inDeg.get(consumer)! - 1;
+      inDeg.set(consumer, nd);
+      if (nd === 0) queue.push(consumer);
     }
   }
+  // Cycle fallback.
+  for (const c of internal)
+    if (!topoOrder.includes(c.name)) topoOrder.push(c.name);
 
-  // Step 2 – longest-path relaxation.
-  const depths = new Map<string, number>();
+  const barW = (name: string) => getTier(heat[name] ?? 0).barW;
+
+  // ASAP: each crate starts as soon as all its deps finish.
+  // topoOrder is already foundations-first so we iterate forward.
+  const asapStart = new Map<string, number>();
+  const asapFinish = new Map<string, number>();
   for (const name of topoOrder) {
-    const d = depths.get(name) ?? 0;
-    for (const dep of depMap.get(name) ?? []) {
-      depths.set(dep, Math.max(depths.get(dep) ?? 0, d + 1));
-    }
+    const deps = depMap.get(name) ?? [];
+    const start =
+      deps.length === 0
+        ? 0
+        : Math.max(...deps.map((d) => asapFinish.get(d) ?? 0)) + BAR_GAP;
+    asapStart.set(name, start);
+    asapFinish.set(name, start + barW(name));
+  }
+  const totalSpan = Math.max(...asapFinish.values());
+
+  // ALAP: push each crate as late as possible without delaying its consumers.
+  // Walk in reverse build order (binaries first).
+  const alapStart = new Map<string, number>();
+  const alapFinish = new Map<string, number>();
+  for (const name of [...topoOrder].reverse()) {
+    const consumers = consumersOf.get(name) ?? [];
+    const finish =
+      consumers.length === 0
+        ? totalSpan
+        : Math.min(...consumers.map((c) => alapStart.get(c) ?? totalSpan)) -
+          BAR_GAP;
+    alapFinish.set(name, finish);
+    alapStart.set(name, finish - barW(name));
   }
 
-  // Cycle members (not reached by topo-sort): resolve depth from already-placed
-  // neighbours iteratively, then fall back to 0 for pure cycles with no anchor.
-  let cycleNodes = internal.filter((c) => !depths.has(c.name));
-  let prevSize = -1;
-  while (cycleNodes.length > 0 && cycleNodes.length !== prevSize) {
-    prevSize = cycleNodes.length;
-    const stillUnplaced: typeof cycleNodes = [];
-    for (const c of cycleNodes) {
-      const placedDeps = (depMap.get(c.name) ?? []).filter((d) =>
-        depths.has(d),
-      );
-      if (placedDeps.length > 0) {
-        depths.set(
-          c.name,
-          Math.max(...placedDeps.map((d) => (depths.get(d) ?? 0) + 1)),
-        );
-      } else {
-        stillUnplaced.push(c);
-      }
-    }
-    cycleNodes = stillUnplaced;
-  }
-  // Pure cycles with no external anchor fall back to 0.
-  for (const c of cycleNodes) {
-    depths.set(c.name, 0);
-  }
-
-  // Sort: depth asc (roots first), heat desc within same depth.
-  const sorted = [...internal].sort((a, b) => {
-    const da = depths.get(a.name) ?? 0;
-    const db = depths.get(b.name) ?? 0;
-    if (da !== db) return da - db;
-    return (heat[b.name] ?? 0) - (heat[a.name] ?? 0);
-  });
-
-  // Fixed column positions: each depth level gets a column whose width equals
-  // the widest bar in that level plus COL_GAP.  This keeps columns compact
-  // when most crates are low-frequency, and expands only where needed.
-  const depthMaxBarW = new Map<number, number>();
+  // Lane packing: sort by ALAP start, greedily assign to first fitting lane.
+  const sorted = [...internal].sort(
+    (a, b) => (alapStart.get(a.name) ?? 0) - (alapStart.get(b.name) ?? 0),
+  );
+  const laneEnd: number[] = [];
+  const laneOf = new Map<string, number>();
   for (const c of sorted) {
-    const d = depths.get(c.name) ?? 0;
-    const w = getTier(heat[c.name] ?? 0).barW;
-    depthMaxBarW.set(d, Math.max(depthMaxBarW.get(d) ?? 0, w));
+    const s = alapStart.get(c.name) ?? 0;
+    let lane = laneEnd.findIndex((end) => end + BAR_GAP <= s);
+    if (lane === -1) lane = laneEnd.push(0) - 1;
+    laneEnd[lane] = alapFinish.get(c.name) ?? 0;
+    laneOf.set(c.name, lane);
   }
 
-  const maxDepth =
-    sorted.length > 0
-      ? Math.max(...sorted.map((c) => depths.get(c.name) ?? 0))
-      : 0;
-
-  const colStart = new Map<number, number>();
-  let x = LEFT_PAD;
-  for (let d = 0; d <= maxDepth; d++) {
-    colStart.set(d, x);
-    x += (depthMaxBarW.get(d) ?? MAX_BAR_W) + COL_GAP;
-  }
-
-  return sorted.map((c, i) => {
-    const depth = depths.get(c.name) ?? 0;
-    return {
-      name: c.name,
-      heat: heat[c.name] ?? 0,
-      depth,
-      tier: getTier(heat[c.name] ?? 0),
-      barX: colStart.get(depth) ?? LEFT_PAD,
-      y: TOP_PAD + i * (ROW_H + ROW_GAP),
-    };
-  });
+  return sorted.map((c) => ({
+    name: c.name,
+    heat: heat[c.name] ?? 0,
+    tier: getTier(heat[c.name] ?? 0),
+    barX: LEFT_PAD + (alapStart.get(c.name) ?? 0),
+    y: TOP_PAD + laneOf.get(c.name)! * (ROW_H + ROW_GAP),
+  }));
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -281,7 +240,10 @@ export function BuildTimingsChart({
   }, [rows]);
 
   const svgH = useMemo(
-    () => TOP_PAD + rows.length * (ROW_H + ROW_GAP) + BOT_PAD,
+    () =>
+      rows.length === 0
+        ? 100
+        : Math.max(...rows.map((r) => r.y)) + ROW_H + BOT_PAD,
     [rows],
   );
 
@@ -339,7 +301,7 @@ export function BuildTimingsChart({
           fontWeight={600}
           style={{ letterSpacing: "0.6px" }}
         >
-          ← ROOTS · · · FOUNDATIONS →
+          ← FOUNDATIONS · · · CONSUMERS →
         </text>
 
         {/* Rows */}

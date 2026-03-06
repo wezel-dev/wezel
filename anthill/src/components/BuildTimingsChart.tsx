@@ -45,6 +45,7 @@ const RIGHT_PAD = 220; // space for labels after the last column
 
 interface Row {
   name: string;
+  version?: string;
   heat: number;
   tier: Tier;
   barX: number;
@@ -137,6 +138,7 @@ function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
 
   return sorted.map((c, i) => ({
     name: c.name,
+    version: c.version,
     heat: heat[c.name] ?? 0,
     tier: getTier(heat[c.name] ?? 0),
     // Mirror x so consumers are on the left, foundations on the right.
@@ -356,6 +358,11 @@ export function BuildTimingsChart({
                 style={{ pointerEvents: "none" }}
               >
                 {row.name}
+                {row.version && (
+                  <tspan dx={4} fontSize={9} fill={colors.border} opacity={0.7}>
+                    v{row.version}
+                  </tspan>
+                )}
                 <tspan dx={5} fontSize={9} fill={colors.border}>
                   {row.heat}%
                 </tspan>

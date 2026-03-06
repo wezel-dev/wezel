@@ -47,6 +47,7 @@ interface Row {
   name: string;
   version?: string;
   heat: number;
+  external: boolean;
   tier: Tier;
   barX: number;
   y: number;
@@ -55,13 +56,12 @@ interface Row {
 // ── Layout computation ────────────────────────────────────────────────────────
 
 function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
-  const internal = topo.filter((c) => !c.external);
-  if (internal.length === 0) return [];
-  const nameSet = new Set(internal.map((c) => c.name));
+  if (topo.length === 0) return [];
+  const nameSet = new Set(topo.map((c) => c.name));
 
   // All three edge kinds. depMap[A] = deps of A (things A needs before it can build).
   const depMap = new Map<string, string[]>();
-  for (const c of internal) {
+  for (const c of topo) {
     const all = [
       ...c.deps,
       ...(c.buildDeps ?? []),
@@ -71,7 +71,7 @@ function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
   }
 
   const consumersOf = new Map<string, string[]>();
-  for (const c of internal) consumersOf.set(c.name, []);
+  for (const c of topo) consumersOf.set(c.name, []);
   for (const [name, deps] of depMap) {
     for (const dep of deps) consumersOf.get(dep)!.push(name);
   }
@@ -79,9 +79,9 @@ function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
   // Kahn's topo-sort seeded from foundations (nodes with no deps).
   // Produces build order: foundations first, top-level binaries last.
   const inDeg = new Map(
-    internal.map((c) => [c.name, (depMap.get(c.name) ?? []).length]),
+    topo.map((c) => [c.name, (depMap.get(c.name) ?? []).length]),
   );
-  const queue: string[] = internal
+  const queue: string[] = topo
     .filter((c) => inDeg.get(c.name) === 0)
     .map((c) => c.name);
   const topoOrder: string[] = [];
@@ -96,8 +96,7 @@ function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
     }
   }
   // Cycle fallback.
-  for (const c of internal)
-    if (!topoOrder.includes(c.name)) topoOrder.push(c.name);
+  for (const c of topo) if (!topoOrder.includes(c.name)) topoOrder.push(c.name);
 
   const barW = (name: string) => getTier(heat[name] ?? 0).barW;
 
@@ -132,7 +131,7 @@ function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
   }
 
   // One row per crate. Consumers (late ALAP start) at the top, foundations at the bottom.
-  const sorted = [...internal].sort(
+  const sorted = [...topo].sort(
     (a, b) => (alapStart.get(b.name) ?? 0) - (alapStart.get(a.name) ?? 0),
   );
 
@@ -140,6 +139,7 @@ function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
     name: c.name,
     version: c.version,
     heat: heat[c.name] ?? 0,
+    external: c.external ?? false,
     tier: getTier(heat[c.name] ?? 0),
     // Mirror x so consumers are on the left, foundations on the right.
     barX: LEFT_PAD + (totalSpan - (alapFinish.get(c.name) ?? 0)),
@@ -331,6 +331,7 @@ export function BuildTimingsChart({
                 fill={colors.bg}
                 stroke={emphBorder ? accent : colors.border}
                 strokeWidth={emphBorder ? 2 : 1}
+                strokeDasharray={row.external ? "4 3" : undefined}
               />
 
               {/* Pill — thin strip at bottom, opacity = position within tier */}

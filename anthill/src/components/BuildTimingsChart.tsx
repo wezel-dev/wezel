@@ -130,27 +130,18 @@ function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
     alapStart.set(name, finish - barW(name));
   }
 
-  // Lane packing: sort by ALAP start, greedily assign to first fitting lane.
+  // One row per crate, sorted by ALAP start (consumers left → foundations right).
   const sorted = [...internal].sort(
     (a, b) => (alapStart.get(a.name) ?? 0) - (alapStart.get(b.name) ?? 0),
   );
-  const laneEnd: number[] = [];
-  const laneOf = new Map<string, number>();
-  for (const c of sorted) {
-    const s = alapStart.get(c.name) ?? 0;
-    let lane = laneEnd.findIndex((end) => end + BAR_GAP <= s);
-    if (lane === -1) lane = laneEnd.push(0) - 1;
-    laneEnd[lane] = alapFinish.get(c.name) ?? 0;
-    laneOf.set(c.name, lane);
-  }
 
-  return sorted.map((c) => ({
+  return sorted.map((c, i) => ({
     name: c.name,
     heat: heat[c.name] ?? 0,
     tier: getTier(heat[c.name] ?? 0),
     // Mirror x so consumers are on the left, foundations on the right.
     barX: LEFT_PAD + (totalSpan - (alapFinish.get(c.name) ?? 0)),
-    y: TOP_PAD + laneOf.get(c.name)! * (ROW_H + ROW_GAP),
+    y: TOP_PAD + i * (ROW_H + ROW_GAP),
   }));
 }
 

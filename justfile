@@ -20,7 +20,7 @@ dev:
     cleanup() {
         echo ""
         echo "Shutting down..."
-        kill $BURROW_PID 2>/dev/null || true
+        kill -- -$(ps -o pgid= -p $BURROW_PID 2>/dev/null | tr -d ' ') 2>/dev/null || kill $BURROW_PID 2>/dev/null || true
         kill $ANTHILL_PID 2>/dev/null || true
         wait
     }

@@ -297,8 +297,55 @@ export default function ScenariosPage() {
       {/* Resize handle + detail */}
       <PanelHandle onDrag={(d) => setListWidth((w) => Math.max(280, w + d))} />
       {selectedId == null && (
-        <div className="flex-1 flex items-center justify-center text-dim text-[11px] font-mono border-l border-[var(--c-border)]">
-          select a scenario
+        <div className="flex-1 flex items-center justify-center border-l border-[var(--c-border)]">
+          <div className="flex flex-col gap-[10px] max-w-[340px]">
+            {scenarios.length === 0 ? (
+              <>
+                <div
+                  className="text-[11px] font-mono font-semibold"
+                  style={{ color: C.accent }}
+                >
+                  no scenarios yet
+                </div>
+                <p
+                  className="text-[11px] font-mono leading-[1.6]"
+                  style={{ color: C.textMid }}
+                >
+                  Scenarios are recorded by{" "}
+                  <span style={{ color: C.text }}>Pheromone</span>, the local
+                  agent that hooks into your shell and tracks every build
+                  command you run. Install it once and it automatically reports
+                  to this dashboard in the background. Until then, this list
+                  stays empty.
+                </p>
+                <a
+                  href="https://wezel-build.github.io/docs/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] font-mono no-underline"
+                  style={{ color: C.accent }}
+                >
+                  install Pheromone →
+                </a>
+              </>
+            ) : (
+              <div
+                className="text-[11px] font-mono"
+                style={{ color: C.textDim }}
+              >
+                select a scenario
+              </div>
+            )}
+            <a
+              href="https://wezel-build.github.io/docs/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[11px] font-mono no-underline"
+              style={{ color: C.accent }}
+            >
+              docs →
+            </a>
+          </div>
         </div>
       )}
       {selectedId != null && (

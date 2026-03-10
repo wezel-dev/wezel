@@ -15,6 +15,7 @@ use axum::{
 use axum_extra::extract::CookieJar;
 use clap::Parser;
 use models::*;
+use wezel_types;
 use reqwest::Client;
 use serde::Deserialize;
 use serde_json::Value;
@@ -336,7 +337,7 @@ async fn commit_to_json(pool: &PgPool, commit_id: i64) -> ApiResult<CommitJson> 
     .map_err(ise)?;
 
     let measurements = sqlx::query_as::<_, Measurement>(
-        "SELECT id, commit_id, name, kind, status, value, prev_value, unit \
+        "SELECT id, commit_id, name, kind, status, value, prev_value, unit, step \
          FROM measurements WHERE commit_id = $1 ORDER BY id",
     )
     .bind(commit_id)
@@ -381,6 +382,7 @@ async fn commit_to_json(pool: &PgPool, commit_id: i64) -> ApiResult<CommitJson> 
                 prev_value: m.prev_value,
                 unit: m.unit,
                 detail,
+                step: m.step,
             }
         })
         .collect();
@@ -687,7 +689,7 @@ async fn get_commits(State(pool): State<PgPool>) -> ApiResult<Json<Vec<CommitJso
     let commit_ids: Vec<i64> = commits.iter().map(|c| c.id).collect();
 
     let measurements = sqlx::query_as::<_, Measurement>(
-        "SELECT id, commit_id, name, kind, status, value, prev_value, unit \
+        "SELECT id, commit_id, name, kind, status, value, prev_value, unit, step \
          FROM measurements WHERE commit_id = ANY($1) ORDER BY id",
     )
     .bind(&commit_ids)
@@ -732,6 +734,7 @@ async fn get_commits(State(pool): State<PgPool>) -> ApiResult<Json<Vec<CommitJso
                 prev_value: m.prev_value,
                 unit: m.unit,
                 detail: detail_map.remove(&m.id).unwrap_or_default(),
+                step: m.step,
             });
     }
 
@@ -771,7 +774,7 @@ async fn get_commits_p(
     let commit_ids: Vec<i64> = commits.iter().map(|c| c.id).collect();
 
     let measurements = sqlx::query_as::<_, Measurement>(
-        "SELECT id, commit_id, name, kind, status, value, prev_value, unit \
+        "SELECT id, commit_id, name, kind, status, value, prev_value, unit, step \
          FROM measurements WHERE commit_id = ANY($1) ORDER BY id",
     )
     .bind(&commit_ids)
@@ -816,6 +819,7 @@ async fn get_commits_p(
                 prev_value: m.prev_value,
                 unit: m.unit,
                 detail: detail_map.remove(&m.id).unwrap_or_default(),
+                step: m.step,
             });
     }
 
@@ -1286,6 +1290,219 @@ async fn ingest_events(
     Ok(StatusCode::OK)
 }
 
+// ── Forager endpoints ─────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+struct ForagerClaimBody {
+    project_upstream: String,
+    commit_sha: String,
+    scenario_name: String,
+    // Optional commit metadata for when GitHub API is not available.
+    commit_author: Option<String>,
+    commit_message: Option<String>,
+    commit_timestamp: Option<String>,
+}
+
+async fn post_forager_claim(
+    State(pool): State<PgPool>,
+    Json(body): Json<ForagerClaimBody>,
+) -> ApiResult<Json<wezel_types::ForagerJob>> {
+    let upstream = body.project_upstream.trim();
+    let sha = body.commit_sha.trim();
+    let scenario_name = body.scenario_name.trim();
+
+    if upstream.is_empty() || sha.is_empty() || scenario_name.is_empty() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    // Find or create project.
+    let project_name = upstream.rsplit('/').next().unwrap_or(upstream);
+    let project_id: i64 =
+        match sqlx::query_as::<_, (i64,)>("SELECT id FROM projects WHERE upstream = $1")
+            .bind(upstream)
+            .fetch_optional(&pool)
+            .await
+            .map_err(ise)?
+        {
+            Some((id,)) => id,
+            None => {
+                sqlx::query_as::<_, IdRow>(
+                    "INSERT INTO projects (name, upstream) VALUES ($1, $2) RETURNING id",
+                )
+                .bind(project_name)
+                .bind(upstream)
+                .fetch_one(&pool)
+                .await
+                .map_err(ise)?
+                .id
+            }
+        };
+
+    // Find or create commit.
+    let short_sha: String = sha.chars().take(7).collect();
+    let commit_id: i64 =
+        match sqlx::query_as::<_, (i64,)>(
+            "SELECT id FROM commits WHERE project_id = $1 AND (sha = $2 OR short_sha = $3)",
+        )
+        .bind(project_id)
+        .bind(sha)
+        .bind(&short_sha)
+        .fetch_optional(&pool)
+        .await
+        .map_err(ise)?
+        {
+            Some((id,)) => id,
+            None => {
+                let author = body
+                    .commit_author
+                    .as_deref()
+                    .unwrap_or("unknown")
+                    .to_string();
+                let message = body
+                    .commit_message
+                    .as_deref()
+                    .unwrap_or("")
+                    .to_string();
+                let timestamp = body
+                    .commit_timestamp
+                    .as_deref()
+                    .unwrap_or("")
+                    .to_string();
+                sqlx::query_as::<_, IdRow>(
+                    "INSERT INTO commits \
+                     (project_id, sha, short_sha, author, message, timestamp, status) \
+                     VALUES ($1, $2, $3, $4, $5, $6, 'not-started') RETURNING id",
+                )
+                .bind(project_id)
+                .bind(sha)
+                .bind(&short_sha)
+                .bind(&author)
+                .bind(&message)
+                .bind(&timestamp)
+                .fetch_one(&pool)
+                .await
+                .map_err(ise)?
+                .id
+            }
+        };
+
+    // Set commit status to running.
+    sqlx::query("UPDATE commits SET status = 'running' WHERE id = $1")
+        .bind(commit_id)
+        .execute(&pool)
+        .await
+        .map_err(ise)?;
+
+    // Create forager token (expires in 4 hours).
+    let token = uuid::Uuid::new_v4().to_string();
+    sqlx::query(
+        "INSERT INTO forager_tokens (commit_id, scenario_name, token, expires_at) \
+         VALUES ($1, $2, $3, now() + interval '4 hours')",
+    )
+    .bind(commit_id)
+    .bind(scenario_name)
+    .bind(&token)
+    .execute(&pool)
+    .await
+    .map_err(ise)?;
+
+    Ok(Json(wezel_types::ForagerJob {
+        token,
+        commit_sha: sha.to_string(),
+        project_id: project_id as u64,
+        project_upstream: upstream.to_string(),
+        scenario_name: scenario_name.to_string(),
+    }))
+}
+
+async fn post_forager_run(
+    State(pool): State<PgPool>,
+    Json(body): Json<wezel_types::ForagerRunReport>,
+) -> ApiResult<StatusCode> {
+    // Validate token and get commit_id.
+    let row: Option<(i64,)> = sqlx::query_as(
+        "SELECT commit_id FROM forager_tokens \
+         WHERE token = $1 AND expires_at > now()",
+    )
+    .bind(&body.token)
+    .fetch_optional(&pool)
+    .await
+    .map_err(ise)?;
+
+    let (commit_id,) = row.ok_or(StatusCode::UNAUTHORIZED)?;
+
+    // Get project_id for prev_value lookups.
+    let (project_id,): (i64,) =
+        sqlx::query_as("SELECT project_id FROM commits WHERE id = $1")
+            .bind(commit_id)
+            .fetch_one(&pool)
+            .await
+            .map_err(ise)?;
+
+    // Insert measurements.
+    for step_report in &body.steps {
+        let Some(ref m) = step_report.measurement else {
+            continue;
+        };
+
+        // Look up prev value from most recent complete measurement with same name.
+        let prev_value: Option<f64> = sqlx::query_as::<_, (Option<f64>,)>(
+            "SELECT m.value FROM measurements m \
+             JOIN commits c ON m.commit_id = c.id \
+             WHERE c.project_id = $1 AND m.name = $2 AND m.commit_id != $3 \
+             AND m.status = 'complete' \
+             ORDER BY c.timestamp DESC, m.id DESC \
+             LIMIT 1",
+        )
+        .bind(project_id)
+        .bind(&m.name)
+        .bind(commit_id)
+        .fetch_optional(&pool)
+        .await
+        .map_err(ise)?
+        .and_then(|(v,)| v);
+
+        let (measurement_id,): (i64,) = sqlx::query_as(
+            "INSERT INTO measurements \
+             (commit_id, name, kind, status, value, prev_value, unit, step) \
+             VALUES ($1, $2, $3, 'complete', $4, $5, $6, $7) RETURNING id",
+        )
+        .bind(commit_id)
+        .bind(&m.name)
+        .bind(&m.kind)
+        .bind(m.value)
+        .bind(prev_value)
+        .bind(&m.unit)
+        .bind(&step_report.step)
+        .fetch_one(&pool)
+        .await
+        .map_err(ise)?;
+
+        // Insert detail rows.
+        for detail in &m.detail {
+            sqlx::query(
+                "INSERT INTO measurement_details (measurement_id, name, value, prev_value) \
+                 VALUES ($1, $2, $3, 0)",
+            )
+            .bind(measurement_id)
+            .bind(&detail.name)
+            .bind(detail.value)
+            .execute(&pool)
+            .await
+            .map_err(ise)?;
+        }
+    }
+
+    // Mark commit complete.
+    sqlx::query("UPDATE commits SET status = 'complete' WHERE id = $1")
+        .bind(commit_id)
+        .execute(&pool)
+        .await
+        .map_err(ise)?;
+
+    Ok(StatusCode::OK)
+}
+
 async fn require_auth(
     State(pool): State<PgPool>,
     jar: CookieJar,
@@ -1358,8 +1575,10 @@ async fn main() {
 
     let app = Router::new()
         .merge(protected_api)
-        // Unauthenticated: ingest endpoint (used by CLI) and auth routes
+        // Unauthenticated: ingest, forager, and auth routes
         .route("/api/events", post(ingest_events))
+        .route("/api/forager/claim", post(post_forager_claim))
+        .route("/api/forager/run", post(post_forager_run))
         .route("/auth/github", get(auth::login))
         .route("/auth/github/callback", get(auth::callback))
         .route("/auth/me", get(auth::me))

@@ -135,6 +135,76 @@ pub struct ForagerCommit {
     pub measurements: Vec<Measurement>,
 }
 
+// ── Forager runner types ─────────────────────────────────────────────────────
+
+/// Scenario definition parsed from `.wezel/scenarios/<name>/scenario.toml`.
+#[derive(Debug, Clone, Serialize)]
+pub struct ScenarioDef {
+    pub name: String,
+    pub description: Option<String>,
+    pub steps: Vec<StepDef>,
+}
+
+/// A single step in a scenario.
+#[derive(Debug, Clone, Serialize)]
+pub struct StepDef {
+    /// Step identifier; also used as the default patch filename stem.
+    pub name: String,
+    /// Resolved forager name (e.g. `"exec"`, `"llvm-lines"`).
+    pub forager: String,
+    pub description: Option<String>,
+    /// Explicit patch filename override; `None` = use `<name>.patch` convention.
+    pub diff: Option<String>,
+    /// Forager-specific inputs serialised from the remaining TOML fields.
+    pub inputs: serde_json::Value,
+}
+
+/// Response from `POST /api/forager/claim`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ForagerJob {
+    pub token: String,
+    pub commit_sha: String,
+    pub project_id: u64,
+    pub project_upstream: String,
+    pub scenario_name: String,
+}
+
+/// Measurement written by a forager plugin to `FORAGER_OUT`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForagerPluginOutput {
+    pub name: String,
+    pub kind: String,
+    pub value: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unit: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub detail: Vec<MeasurementDetail>,
+}
+
+/// Envelope written by a forager plugin to `FORAGER_OUT`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForagerPluginEnvelope {
+    pub measurement: Option<ForagerPluginOutput>,
+}
+
+/// Per-step report included in `ForagerRunReport`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForagerStepReport {
+    pub step: String,
+    /// `None` when the forager produced no measurement (e.g. `exec`).
+    pub measurement: Option<ForagerPluginOutput>,
+}
+
+/// Body of `POST /api/forager/run`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForagerRunReport {
+    pub token: String,
+    pub steps: Vec<ForagerStepReport>,
+}
+
+// ── Pheromone ─────────────────────────────────────────────────────────────────
+
 /// Written by a `pheromone-<tool>` process to the path in `PHEROMONE_OUT`.
 /// This is how pheromone handlers communicate back to `pheromone_cli`.
 #[derive(Debug, Clone, Serialize, Deserialize)]

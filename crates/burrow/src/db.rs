@@ -88,6 +88,14 @@ async fn migrate(pool: &PgPool) -> sqlx::Result<()> {
             github_login TEXT NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+        CREATE TABLE IF NOT EXISTS forager_tokens (
+            id BIGSERIAL PRIMARY KEY,
+            commit_id BIGINT NOT NULL REFERENCES commits(id),
+            scenario_name TEXT NOT NULL,
+            token TEXT NOT NULL UNIQUE,
+            claimed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            expires_at TIMESTAMPTZ NOT NULL
+        );
         ",
     )
     .execute(pool)
@@ -101,6 +109,7 @@ async fn migrate(pool: &PgPool) -> sqlx::Result<()> {
         ALTER TABLE graph_edges DROP CONSTRAINT IF EXISTS graph_edges_pkey;
         ALTER TABLE graph_edges ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'normal';
         ALTER TABLE graph_edges ADD PRIMARY KEY (source_id, target_id, kind);
+        ALTER TABLE measurements ADD COLUMN IF NOT EXISTS step TEXT;
         ",
     )
     .execute(pool)

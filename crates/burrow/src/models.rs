@@ -62,6 +62,15 @@ pub struct Measurement {
     pub value: Option<f64>,
     pub prev_value: Option<f64>,
     pub unit: Option<String>,
+    pub step: Option<String>,
+}
+
+#[derive(FromRow)]
+pub struct ForagerToken {
+    pub id: i64,
+    pub commit_id: i64,
+    pub scenario_name: String,
+    pub token: String,
 }
 
 #[derive(FromRow, Serialize)]
@@ -165,6 +174,8 @@ pub struct MeasurementJson {
     pub unit: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub detail: Vec<MeasurementDetailJson>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub step: Option<String>,
 }
 
 #[derive(Serialize)]

@@ -3,8 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Pin, PinOff } from "lucide-react";
 import { C, alpha } from "../lib/colors";
 import { MONO } from "../lib/format";
-import type { ScenarioSummary } from "../lib/api";
-import { useScenarios } from "../lib/hooks";
+import type { ObservationSummary } from "../lib/api";
+import { useObservations } from "../lib/hooks";
 import { FilterBar } from "../components/FilterBar";
 import { FreqBar } from "../components/FreqBar";
 import { Badge } from "../components/Badge";
@@ -14,13 +14,13 @@ import { useKeyboardNav } from "../lib/useKeyboardNav";
 import fuzzysort from "fuzzysort";
 import { useProject } from "../lib/useProject";
 
-export default function ScenariosPage() {
+export default function ObservationsPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const selectedId = id ? Number(id) : null;
   const { current } = useProject();
 
-  const { scenarios, error, togglePin: apiTogglePin } = useScenarios();
+  const { observations, error, togglePin: apiTogglePin } = useObservations();
   const [search, setSearch] = useState("");
   const [userFilter, setUserFilter] = useState<string[]>([]);
   const [profileFilter, setProfileFilter] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export default function ScenariosPage() {
   );
 
   const getFreq = useCallback(
-    (s: ScenarioSummary) => {
+    (s: ObservationSummary) => {
       if (userFilter.length === 0) return s.runs.length;
       return s.runs.filter((r) => userFilter.includes(r.user)).length;
     },
@@ -49,24 +49,24 @@ export default function ScenariosPage() {
   );
 
   const filtered = useMemo(() => {
-    let list: { scenario: ScenarioSummary; result: Fuzzysort.Result | null }[];
+    let list: { observation: ObservationSummary; result: Fuzzysort.Result | null }[];
     if (search) {
-      const results = fuzzysort.go(search, scenarios, {
+      const results = fuzzysort.go(search, observations, {
         key: "name",
         all: true,
       });
-      list = results.map((r) => ({ scenario: r.obj, result: r }));
+      list = results.map((r) => ({ observation: r.obj, result: r }));
     } else {
-      list = scenarios.map((s) => ({ scenario: s, result: null }));
+      list = observations.map((s) => ({ observation: s, result: null }));
     }
     if (profileFilter)
-      list = list.filter((item) => item.scenario.profile === profileFilter);
-    if (!search) list.sort((a, b) => getFreq(b.scenario) - getFreq(a.scenario));
+      list = list.filter((item) => item.observation.profile === profileFilter);
+    if (!search) list.sort((a, b) => getFreq(b.observation) - getFreq(a.observation));
     return list;
-  }, [scenarios, search, profileFilter, getFreq]);
+  }, [observations, search, profileFilter, getFreq]);
 
   const maxFreq = useMemo(
-    () => Math.max(...filtered.map((f) => getFreq(f.scenario)), 1),
+    () => Math.max(...filtered.map((f) => getFreq(f.observation)), 1),
     [filtered, getFreq],
   );
 
@@ -93,7 +93,7 @@ export default function ScenariosPage() {
       },
       "/": () => {
         const el = document.getElementById(
-          "scenario-search",
+          "observation-search",
         ) as HTMLInputElement | null;
         el?.focus();
       },
@@ -120,12 +120,12 @@ export default function ScenariosPage() {
         k: moveUp,
         Enter: () => {
           if (hlIdx >= 0 && hlIdx < filtered.length) {
-            const s = filtered[hlIdx].scenario;
+            const s = filtered[hlIdx].observation;
             if (current?.id == null) return;
             navigate(
               s.id === selectedId
                 ? `/project/${current.id}`
-                : `/project/${current.id}/scenario/${s.id}`,
+                : `/project/${current.id}/observation/${s.id}`,
             );
           }
         },
@@ -188,9 +188,9 @@ export default function ScenariosPage() {
         <div ref={rowsRef} className="flex-1 overflow-y-auto">
           {filtered.length === 0 && (
             <div className="p-[20px] text-center text-dim text-xs">
-              {scenarios.length === 0 ? (
+              {observations.length === 0 ? (
                 <span>
-                  No scenarios yet. Run{" "}
+                  No observations yet. Run{" "}
                   <code style={{ fontFamily: MONO, color: C.accent as string }}>
                     wezel
                   </code>{" "}
@@ -209,7 +209,7 @@ export default function ScenariosPage() {
               )}
             </div>
           )}
-          {filtered.map(({ scenario: s, result }, fi) => {
+          {filtered.map(({ observation: s, result }, fi) => {
             const isSel = s.id === selectedId;
             const freq = getFreq(s);
             return (
@@ -220,7 +220,7 @@ export default function ScenariosPage() {
                   navigate(
                     isSel
                       ? `/project/${current.id}`
-                      : `/project/${current.id}/scenario/${s.id}`,
+                      : `/project/${current.id}/observation/${s.id}`,
                   );
                 }}
                 className={`${GRID_CLS} px-[12px] py-[6px] items-center cursor-pointer transition-all duration-100`}
@@ -299,19 +299,19 @@ export default function ScenariosPage() {
       {selectedId == null && (
         <div className="flex-1 flex items-center justify-center border-l border-[var(--c-border)]">
           <div className="flex flex-col gap-[10px] max-w-[340px]">
-            {scenarios.length === 0 ? (
+            {observations.length === 0 ? (
               <>
                 <div
                   className="text-[11px] font-mono font-semibold"
                   style={{ color: C.accent }}
                 >
-                  no scenarios yet
+                  no observations yet
                 </div>
                 <p
                   className="text-[11px] font-mono leading-[1.6]"
                   style={{ color: C.textMid }}
                 >
-                  Scenarios are recorded by{" "}
+                  Observations are recorded by{" "}
                   <span style={{ color: C.text }}>Pheromone</span>, the local
                   agent that hooks into your shell and tracks every build
                   command you run. Install it once and it automatically reports
@@ -333,7 +333,7 @@ export default function ScenariosPage() {
                 className="text-[11px] font-mono"
                 style={{ color: C.textDim }}
               >
-                select a scenario
+                select an observation
               </div>
             )}
             <a
@@ -361,7 +361,7 @@ export default function ScenariosPage() {
         >
           <DetailView
             key={selectedId}
-            scenarioId={selectedId}
+            observationId={selectedId}
             keyboardActive={focusPanel === "runs"}
             userFilter={userFilter}
           />

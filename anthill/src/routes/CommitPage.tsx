@@ -438,7 +438,7 @@ export default function CommitPage() {
           to={toProjectHome}
           className="text-accent text-[11px] font-mono no-underline"
         >
-          ← back to scenarios
+          ← back to observations
         </Link>
       </div>
     );
@@ -451,7 +451,7 @@ export default function CommitPage() {
           onClick={() => navigate(toProjectHome)}
           className="flex items-center gap-[4px] bg-transparent border-0 text-mid hover:text-accent text-[10px] font-mono cursor-pointer p-0"
         >
-          <ArrowLeft size={12} /> scenarios
+          <ArrowLeft size={12} /> observations
         </button>
 
         <div className="flex items-center gap-[6px]">

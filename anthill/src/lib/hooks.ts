@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useProject } from "./useProject";
-import type { Overview, ScenarioSummary, GithubCommit } from "./api";
-import type { Scenario, ForagerCommit } from "./data";
+import type { Overview, ObservationSummary, GithubCommit } from "./api";
+import type { Observation, ForagerCommit } from "./data";
 
-const EMPTY_SCENARIOS: ScenarioSummary[] = [];
+const EMPTY_OBSERVATIONS: ObservationSummary[] = [];
 const EMPTY_COMMITS: ForagerCommit[] = [];
 const EMPTY_USERS: string[] = [];
 const EMPTY_GITHUB_COMMIT: GithubCommit | null = null;
 const EMPTY_OVERVIEW: Overview = {
-  scenarioCount: 0,
+  observationCount: 0,
   trackedCount: 0,
   latestCommitShortSha: null,
   latestCommitStatus: null,
@@ -65,10 +65,10 @@ export function useOverview() {
   return { overview: data ?? EMPTY_OVERVIEW, loading, error };
 }
 
-export function useScenarios() {
+export function useObservations() {
   const { pApi, current } = useProject();
   const { data, loading, error, refetch } = useAsync(
-    () => pApi.scenarios(),
+    () => pApi.observations(),
     [current?.id],
   );
 
@@ -80,17 +80,17 @@ export function useScenarios() {
     [pApi, refetch],
   );
 
-  return { scenarios: data ?? EMPTY_SCENARIOS, loading, error, togglePin };
+  return { observations: data ?? EMPTY_OBSERVATIONS, loading, error, togglePin };
 }
 
-export function useScenario(id: number | null) {
+export function useObservation(id: number | null) {
   const { pApi, current } = useProject();
   const { data, loading, error } = useAsync(
-    () => (id != null ? pApi.scenario(id) : Promise.reject("no id")),
+    () => (id != null ? pApi.observation(id) : Promise.reject("no id")),
     [id, current?.id],
   );
   return {
-    scenario: data as Scenario | null,
+    observation: data as Observation | null,
     loading: id != null && loading,
     error,
   };

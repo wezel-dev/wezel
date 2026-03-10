@@ -20,7 +20,7 @@ async fn migrate(pool: &PgPool) -> sqlx::Result<()> {
             id BIGSERIAL PRIMARY KEY,
             username TEXT NOT NULL UNIQUE
         );
-        CREATE TABLE IF NOT EXISTS scenarios (
+        CREATE TABLE IF NOT EXISTS observations (
             id BIGSERIAL PRIMARY KEY,
             project_id BIGINT NOT NULL REFERENCES projects(id),
             name TEXT NOT NULL,
@@ -30,7 +30,7 @@ async fn migrate(pool: &PgPool) -> sqlx::Result<()> {
         );
         CREATE TABLE IF NOT EXISTS graph_nodes (
             id BIGSERIAL PRIMARY KEY,
-            scenario_id BIGINT NOT NULL REFERENCES scenarios(id) ON DELETE CASCADE,
+            scenario_id BIGINT NOT NULL REFERENCES observations(id) ON DELETE CASCADE,
             name TEXT NOT NULL,
             version TEXT NOT NULL DEFAULT '',
             external BOOLEAN NOT NULL DEFAULT FALSE,
@@ -44,7 +44,7 @@ async fn migrate(pool: &PgPool) -> sqlx::Result<()> {
         );
         CREATE TABLE IF NOT EXISTS runs (
             id BIGSERIAL PRIMARY KEY,
-            scenario_id BIGINT NOT NULL REFERENCES scenarios(id),
+            scenario_id BIGINT NOT NULL REFERENCES observations(id),
             \"user\" TEXT NOT NULL,
             platform TEXT NOT NULL DEFAULT '',
             timestamp TEXT NOT NULL,
@@ -91,7 +91,7 @@ async fn migrate(pool: &PgPool) -> sqlx::Result<()> {
         CREATE TABLE IF NOT EXISTS forager_tokens (
             id BIGSERIAL PRIMARY KEY,
             commit_id BIGINT NOT NULL REFERENCES commits(id),
-            scenario_name TEXT NOT NULL,
+            benchmark_name TEXT NOT NULL,
             token TEXT NOT NULL UNIQUE,
             claimed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
             expires_at TIMESTAMPTZ NOT NULL
@@ -110,6 +110,8 @@ async fn migrate(pool: &PgPool) -> sqlx::Result<()> {
         ALTER TABLE graph_edges ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'normal';
         ALTER TABLE graph_edges ADD PRIMARY KEY (source_id, target_id, kind);
         ALTER TABLE measurements ADD COLUMN IF NOT EXISTS step TEXT;
+        ALTER TABLE IF EXISTS scenarios RENAME TO observations;
+        ALTER TABLE IF EXISTS forager_tokens RENAME COLUMN scenario_name TO benchmark_name;
         ",
     )
     .execute(pool)

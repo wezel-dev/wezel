@@ -16,7 +16,7 @@ pub struct User {
 }
 
 #[derive(FromRow, Serialize)]
-pub struct Scenario {
+pub struct Observation {
     pub id: i64,
     pub name: String,
     pub profile: String,
@@ -69,7 +69,7 @@ pub struct Measurement {
 pub struct ForagerToken {
     pub id: i64,
     pub commit_id: i64,
-    pub scenario_name: String,
+    pub benchmark_name: String,
     pub token: String,
 }
 
@@ -141,7 +141,7 @@ pub struct GraphNodeJson {
 }
 
 #[derive(Serialize)]
-pub struct ScenarioJson {
+pub struct ObservationJson {
     pub id: i64,
     pub name: String,
     pub profile: String,
@@ -192,8 +192,8 @@ pub struct CommitJson {
 
 #[derive(Serialize)]
 pub struct OverviewJson {
-    #[serde(rename = "scenarioCount")]
-    pub scenario_count: i64,
+    #[serde(rename = "observationCount")]
+    pub observation_count: i64,
     #[serde(rename = "trackedCount")]
     pub tracked_count: i64,
     #[serde(rename = "latestCommitShortSha")]

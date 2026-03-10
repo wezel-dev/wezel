@@ -15,8 +15,8 @@ export interface ProjectCtxValue {
 /** Fallback api that always rejects — used before a project is selected. */
 export const nullApi: ProjectApi = {
   overview: () => Promise.reject("no project"),
-  scenarios: () => Promise.reject("no project"),
-  scenario: () => Promise.reject("no project"),
+  observations: () => Promise.reject("no project"),
+  observation: () => Promise.reject("no project"),
   togglePin: () => Promise.reject("no project"),
   commits: () => Promise.reject("no project"),
   commit: () => Promise.reject("no project"),

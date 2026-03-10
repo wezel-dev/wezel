@@ -54,7 +54,7 @@ pub struct Run {
     pub dirty_crates: Vec<String>,
 }
 
-// ── Scenarios ────────────────────────────────────────────────────────────────
+// ── Observations ─────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -63,9 +63,9 @@ pub enum Profile {
     Release,
 }
 
-/// A build scenario: a specific project + profile combination being tracked.
+/// An observed build: a specific project + profile combination being tracked.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Scenario {
+pub struct Observation {
     pub id: u64,
     pub name: String,
     pub profile: Profile,
@@ -137,15 +137,15 @@ pub struct ForagerCommit {
 
 // ── Forager runner types ─────────────────────────────────────────────────────
 
-/// Scenario definition parsed from `.wezel/scenarios/<name>/scenario.toml`.
+/// Benchmark definition parsed from `.wezel/benchmarks/<name>/benchmark.toml`.
 #[derive(Debug, Clone, Serialize)]
-pub struct ScenarioDef {
+pub struct BenchmarkDef {
     pub name: String,
     pub description: Option<String>,
     pub steps: Vec<StepDef>,
 }
 
-/// A single step in a scenario.
+/// A single step in a benchmark.
 #[derive(Debug, Clone, Serialize)]
 pub struct StepDef {
     /// Step identifier; also used as the default patch filename stem.
@@ -167,7 +167,7 @@ pub struct ForagerJob {
     pub commit_sha: String,
     pub project_id: u64,
     pub project_upstream: String,
-    pub scenario_name: String,
+    pub benchmark_name: String,
 }
 
 /// Measurement written by a forager plugin to `FORAGER_OUT`.

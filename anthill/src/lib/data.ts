@@ -26,7 +26,7 @@ export interface Run {
   dirtyCrates: string[];
 }
 
-export interface Scenario {
+export interface Observation {
   id: number;
   name: string;
   profile: "dev" | "release";

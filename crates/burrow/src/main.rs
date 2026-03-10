@@ -253,13 +253,13 @@ async fn build_graph(pool: &PgPool, scenario_id: i64) -> ApiResult<Vec<GraphNode
     Ok(graph)
 }
 
-async fn scenario_to_json(
+async fn observation_to_json(
     pool: &PgPool,
     id: i64,
     include_graph: bool,
-) -> ApiResult<Option<ScenarioJson>> {
-    let Some(s) = sqlx::query_as::<_, Scenario>(
-        "SELECT id, name, profile, pinned, platform FROM scenarios WHERE id = $1",
+) -> ApiResult<Option<ObservationJson>> {
+    let Some(s) = sqlx::query_as::<_, Observation>(
+        "SELECT id, name, profile, pinned, platform FROM observations WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(pool)
@@ -316,7 +316,7 @@ async fn scenario_to_json(
         None
     };
 
-    Ok(Some(ScenarioJson {
+    Ok(Some(ObservationJson {
         id: s.id,
         name: s.name,
         profile: s.profile,
@@ -447,13 +447,13 @@ async fn rename_project(
 }
 
 async fn get_overview(State(pool): State<PgPool>) -> ApiResult<Json<OverviewJson>> {
-    let (scenario_count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM scenarios")
+    let (observation_count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM observations")
         .fetch_one(&pool)
         .await
         .map_err(ise)?;
 
     let (tracked_count,): (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM scenarios WHERE pinned = TRUE")
+        sqlx::query_as("SELECT COUNT(*) FROM observations WHERE pinned = TRUE")
             .fetch_one(&pool)
             .await
             .map_err(ise)?;
@@ -466,7 +466,7 @@ async fn get_overview(State(pool): State<PgPool>) -> ApiResult<Json<OverviewJson
     .map_err(ise)?;
 
     Ok(Json(OverviewJson {
-        scenario_count,
+        observation_count,
         tracked_count,
         latest_commit_short_sha: latest.as_ref().map(|l| l.short_sha.clone()),
         latest_commit_status: latest.map(|l| l.status),
@@ -477,15 +477,15 @@ async fn get_overview_p(
     Path((project_id,)): Path<(i64,)>,
     State(pool): State<PgPool>,
 ) -> ApiResult<Json<OverviewJson>> {
-    let (scenario_count,): (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM scenarios WHERE project_id = $1")
+    let (observation_count,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM observations WHERE project_id = $1")
             .bind(project_id)
             .fetch_one(&pool)
             .await
             .map_err(ise)?;
 
     let (tracked_count,): (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM scenarios WHERE project_id = $1 AND pinned = TRUE")
+        sqlx::query_as("SELECT COUNT(*) FROM observations WHERE project_id = $1 AND pinned = TRUE")
             .bind(project_id)
             .fetch_one(&pool)
             .await
@@ -500,19 +500,19 @@ async fn get_overview_p(
     .map_err(ise)?;
 
     Ok(Json(OverviewJson {
-        scenario_count,
+        observation_count,
         tracked_count,
         latest_commit_short_sha: latest.as_ref().map(|l| l.short_sha.clone()),
         latest_commit_status: latest.map(|l| l.status),
     }))
 }
 
-async fn get_scenarios_p(
+async fn get_observations_p(
     Path((project_id,)): Path<(i64,)>,
     State(pool): State<PgPool>,
-) -> ApiResult<Json<Vec<ScenarioJson>>> {
-    let scenarios = sqlx::query_as::<_, Scenario>(
-        "SELECT id, name, profile, pinned, platform FROM scenarios WHERE project_id = $1 ORDER BY id",
+) -> ApiResult<Json<Vec<ObservationJson>>> {
+    let scenarios = sqlx::query_as::<_, Observation>(
+        "SELECT id, name, profile, pinned, platform FROM observations WHERE project_id = $1 ORDER BY id",
     )
     .bind(project_id)
     .fetch_all(&pool)
@@ -566,9 +566,9 @@ async fn get_scenarios_p(
             });
     }
 
-    let out: Vec<ScenarioJson> = scenarios
+    let out: Vec<ObservationJson> = scenarios
         .into_iter()
-        .map(|s| ScenarioJson {
+        .map(|s| ObservationJson {
             id: s.id,
             name: s.name,
             profile: s.profile,
@@ -582,9 +582,9 @@ async fn get_scenarios_p(
     Ok(Json(out))
 }
 
-async fn get_scenarios(State(pool): State<PgPool>) -> ApiResult<Json<Vec<ScenarioJson>>> {
-    let scenarios = sqlx::query_as::<_, Scenario>(
-        "SELECT id, name, profile, pinned, platform FROM scenarios ORDER BY id",
+async fn get_observations(State(pool): State<PgPool>) -> ApiResult<Json<Vec<ObservationJson>>> {
+    let scenarios = sqlx::query_as::<_, Observation>(
+        "SELECT id, name, profile, pinned, platform FROM observations ORDER BY id",
     )
     .fetch_all(&pool)
     .await
@@ -637,9 +637,9 @@ async fn get_scenarios(State(pool): State<PgPool>) -> ApiResult<Json<Vec<Scenari
             });
     }
 
-    let out: Vec<ScenarioJson> = scenarios
+    let out: Vec<ObservationJson> = scenarios
         .into_iter()
-        .map(|s| ScenarioJson {
+        .map(|s| ObservationJson {
             id: s.id,
             name: s.name,
             profile: s.profile,
@@ -653,21 +653,21 @@ async fn get_scenarios(State(pool): State<PgPool>) -> ApiResult<Json<Vec<Scenari
     Ok(Json(out))
 }
 
-async fn get_scenario(
+async fn get_observation(
     Path(id): Path<i64>,
     State(pool): State<PgPool>,
-) -> ApiResult<Json<ScenarioJson>> {
-    scenario_to_json(&pool, id, true)
+) -> ApiResult<Json<ObservationJson>> {
+    observation_to_json(&pool, id, true)
         .await?
         .map(Json)
         .ok_or(StatusCode::NOT_FOUND)
 }
 
-async fn get_scenario_p(
+async fn get_observation_p(
     Path((_pid, id)): Path<(i64, i64)>,
     State(pool): State<PgPool>,
-) -> ApiResult<Json<ScenarioJson>> {
-    scenario_to_json(&pool, id, true)
+) -> ApiResult<Json<ObservationJson>> {
+    observation_to_json(&pool, id, true)
         .await?
         .map(Json)
         .ok_or(StatusCode::NOT_FOUND)
@@ -979,22 +979,22 @@ async fn get_users(State(pool): State<PgPool>) -> ApiResult<Json<Vec<String>>> {
     Ok(Json(rows.into_iter().map(|u| u.username).collect()))
 }
 
-async fn toggle_pin(
+async fn toggle_observation_pin(
     Path(id): Path<i64>,
     State(pool): State<PgPool>,
-) -> ApiResult<Json<ScenarioJson>> {
-    toggle_pin_inner(id, &pool).await
+) -> ApiResult<Json<ObservationJson>> {
+    toggle_observation_pin_inner(id, &pool).await
 }
 
-async fn toggle_pin_p(
+async fn toggle_observation_pin_p(
     Path((_pid, id)): Path<(i64, i64)>,
     State(pool): State<PgPool>,
-) -> ApiResult<Json<ScenarioJson>> {
-    toggle_pin_inner(id, &pool).await
+) -> ApiResult<Json<ObservationJson>> {
+    toggle_observation_pin_inner(id, &pool).await
 }
 
-async fn toggle_pin_inner(id: i64, pool: &PgPool) -> ApiResult<Json<ScenarioJson>> {
-    let result = sqlx::query("UPDATE scenarios SET pinned = NOT pinned WHERE id = $1")
+async fn toggle_observation_pin_inner(id: i64, pool: &PgPool) -> ApiResult<Json<ObservationJson>> {
+    let result = sqlx::query("UPDATE observations SET pinned = NOT pinned WHERE id = $1")
         .bind(id)
         .execute(pool)
         .await
@@ -1004,7 +1004,7 @@ async fn toggle_pin_inner(id: i64, pool: &PgPool) -> ApiResult<Json<ScenarioJson
         return Err(StatusCode::NOT_FOUND);
     }
 
-    scenario_to_json(pool, id, true)
+    observation_to_json(pool, id, true)
         .await?
         .map(Json)
         .ok_or(StatusCode::NOT_FOUND)
@@ -1086,7 +1086,7 @@ async fn ingest_events(
 
         let scenario_platform: Option<&str> = pheromone.get("platform").and_then(|v| v.as_str());
 
-        let scenario_name = if packages.is_empty() {
+        let benchmark_name = if packages.is_empty() {
             format!("{tool} {command}")
         } else {
             format!("{tool} {command} {}", packages.join(" "))
@@ -1095,22 +1095,22 @@ async fn ingest_events(
         // Find or create scenario
         let scenario_id: i64 = match if let Some(sp) = scenario_platform {
             sqlx::query_as::<_, (i64,)>(
-                "SELECT id FROM scenarios \
+                "SELECT id FROM observations \
                  WHERE project_id = $1 AND name = $2 AND profile = $3 AND platform = $4",
             )
             .bind(project_id)
-            .bind(&scenario_name)
+            .bind(&benchmark_name)
             .bind(profile)
             .bind(sp)
             .fetch_optional(&pool)
             .await
         } else {
             sqlx::query_as::<_, (i64,)>(
-                "SELECT id FROM scenarios \
+                "SELECT id FROM observations \
                  WHERE project_id = $1 AND name = $2 AND profile = $3 AND platform IS NULL",
             )
             .bind(project_id)
-            .bind(&scenario_name)
+            .bind(&benchmark_name)
             .bind(profile)
             .fetch_optional(&pool)
             .await
@@ -1120,11 +1120,11 @@ async fn ingest_events(
             Some((id,)) => id,
             None => {
                 sqlx::query_as::<_, IdRow>(
-                    "INSERT INTO scenarios (project_id, name, profile, platform) \
+                    "INSERT INTO observations (project_id, name, profile, platform) \
                      VALUES ($1, $2, $3, $4) RETURNING id",
                 )
                 .bind(project_id)
-                .bind(&scenario_name)
+                .bind(&benchmark_name)
                 .bind(profile)
                 .bind(scenario_platform)
                 .fetch_one(&pool)
@@ -1296,7 +1296,7 @@ async fn ingest_events(
 struct ForagerClaimBody {
     project_upstream: String,
     commit_sha: String,
-    scenario_name: String,
+    benchmark_name: String,
     // Optional commit metadata for when GitHub API is not available.
     commit_author: Option<String>,
     commit_message: Option<String>,
@@ -1309,9 +1309,9 @@ async fn post_forager_claim(
 ) -> ApiResult<Json<wezel_types::ForagerJob>> {
     let upstream = body.project_upstream.trim();
     let sha = body.commit_sha.trim();
-    let scenario_name = body.scenario_name.trim();
+    let benchmark_name = body.benchmark_name.trim();
 
-    if upstream.is_empty() || sha.is_empty() || scenario_name.is_empty() {
+    if upstream.is_empty() || sha.is_empty() || benchmark_name.is_empty() {
         return Err(StatusCode::BAD_REQUEST);
     }
 
@@ -1396,11 +1396,11 @@ async fn post_forager_claim(
     // Create forager token (expires in 4 hours).
     let token = uuid::Uuid::new_v4().to_string();
     sqlx::query(
-        "INSERT INTO forager_tokens (commit_id, scenario_name, token, expires_at) \
+        "INSERT INTO forager_tokens (commit_id, benchmark_name, token, expires_at) \
          VALUES ($1, $2, $3, now() + interval '4 hours')",
     )
     .bind(commit_id)
-    .bind(scenario_name)
+    .bind(benchmark_name)
     .bind(&token)
     .execute(&pool)
     .await
@@ -1411,7 +1411,7 @@ async fn post_forager_claim(
         commit_sha: sha.to_string(),
         project_id: project_id as u64,
         project_upstream: upstream.to_string(),
-        scenario_name: scenario_name.to_string(),
+        benchmark_name: benchmark_name.to_string(),
     }))
 }
 
@@ -1545,14 +1545,14 @@ async fn main() {
         .route("/api/project", get(get_projects).post(create_project))
         .route("/api/project/{project_id}", patch(rename_project))
         .route("/api/project/{project_id}/overview", get(get_overview_p))
-        .route("/api/project/{project_id}/scenario", get(get_scenarios_p))
+        .route("/api/project/{project_id}/observation", get(get_observations_p))
         .route(
-            "/api/project/{project_id}/scenario/{id}",
-            get(get_scenario_p),
+            "/api/project/{project_id}/observation/{id}",
+            get(get_observation_p),
         )
         .route(
-            "/api/project/{project_id}/scenario/{id}/pin",
-            patch(toggle_pin_p),
+            "/api/project/{project_id}/observation/{id}/pin",
+            patch(toggle_observation_pin_p),
         )
         .route(
             "/api/project/{project_id}/commit",
@@ -1565,9 +1565,9 @@ async fn main() {
         )
         .route("/api/project/{project_id}/user", get(get_users))
         .route("/api/overview", get(get_overview))
-        .route("/api/scenario", get(get_scenarios))
-        .route("/api/scenario/{id}", get(get_scenario))
-        .route("/api/scenario/{id}/pin", patch(toggle_pin))
+        .route("/api/observation", get(get_observations))
+        .route("/api/observation/{id}", get(get_observation))
+        .route("/api/observation/{id}/pin", patch(toggle_observation_pin))
         .route("/api/commit", get(get_commits))
         .route("/api/commit/{sha}", get(get_commit))
         .route("/api/user", get(get_users))

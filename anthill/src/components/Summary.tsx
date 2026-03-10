@@ -2,7 +2,7 @@ import { useTheme } from "../lib/theme";
 import { C, alpha } from "../lib/colors";
 import { fmtMs } from "../lib/format";
 import { Stat } from "./Stat";
-import type { Scenario, Run } from "../lib/data";
+import type { Observation, Run } from "../lib/data";
 
 function percentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
@@ -29,16 +29,16 @@ function fmtTimespan(runs: Run[]): string {
 }
 
 export function Summary({
-  scenario,
+  observation,
   selectedRuns,
   heat,
 }: {
-  scenario: Scenario;
+  observation: Observation;
   selectedRuns: Run[];
   heat: Record<string, number>;
 }) {
   const { heatColor } = useTheme();
-  const crateNames = scenario.graph.map((c) => c.name);
+  const crateNames = observation.graph.map((c) => c.name);
   const hotCrates = crateNames
     .map((n) => ({ name: n, heat: heat[n] ?? 0 }))
     .sort((a, b) => b.heat - a.heat)
@@ -91,12 +91,12 @@ export function Summary({
         />
         <Stat
           label="Runs selected"
-          value={`${selectedRuns.length}/${scenario.runs.length}`}
+          value={`${selectedRuns.length}/${observation.runs.length}`}
           color={C.accent}
         />
         <Stat
           label="Crates in graph"
-          value={`${scenario.graph.length}`}
+          value={`${observation.graph.length}`}
           color={C.pink}
         />
       </div>

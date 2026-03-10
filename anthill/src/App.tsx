@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import ScenariosPage from "./routes/ScenariosPage";
+import ObservationsPage from "./routes/ObservationsPage";
 import { ProjectProvider } from "./lib/ProjectContext";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Shell from "./Shell";
@@ -20,15 +20,15 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <ScenariosPage />,
+        element: <ObservationsPage />,
       },
       {
         path: "project/:projectId",
-        element: <ScenariosPage />,
+        element: <ObservationsPage />,
       },
       {
-        path: "project/:projectId/scenario/:id",
-        element: <ScenariosPage />,
+        path: "project/:projectId/observation/:id",
+        element: <ObservationsPage />,
       },
       {
         path: "project/:projectId/commit/:sha",

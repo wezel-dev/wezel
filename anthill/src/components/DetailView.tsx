@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { useTheme } from "../lib/theme";
 import { C, alpha } from "../lib/colors";
 import { computeHeat } from "../lib/data";
-import { useScenario } from "../lib/hooks";
+import { useObservation } from "../lib/hooks";
 import { Badge } from "./Badge";
 import { HeatLegend } from "./HeatLegend";
 import { PanelHandle } from "./PanelHandle";
@@ -30,29 +30,29 @@ function runKey(r: { timestamp: string; commit: string; user: string }) {
 // (e.g. panelState, selectionState) to reduce the number of individual state variables.
 
 export function DetailView({
-  scenarioId,
+  observationId,
   keyboardActive = false,
   userFilter = [],
 }: {
-  scenarioId: number;
+  observationId: number;
   keyboardActive?: boolean;
   userFilter?: string[];
 }) {
-  const { scenario: rawScenario, loading, error } = useScenario(scenarioId);
+  const { observation: rawObservation, loading, error } = useObservation(observationId);
 
-  const scenario = useMemo(() => {
-    if (!rawScenario) return null;
-    if (userFilter.length === 0) return rawScenario;
+  const observation = useMemo(() => {
+    if (!rawObservation) return null;
+    if (userFilter.length === 0) return rawObservation;
     return {
-      ...rawScenario,
-      runs: rawScenario.runs.filter((r) => userFilter.includes(r.user)),
+      ...rawObservation,
+      runs: rawObservation.runs.filter((r) => userFilter.includes(r.user)),
     };
-  }, [rawScenario, userFilter]);
+  }, [rawObservation, userFilter]);
 
-  const runs = (scenario?.runs ?? EMPTY_RUNS)
+  const runs = (observation?.runs ?? EMPTY_RUNS)
     .slice()
     .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-  const graph = scenario?.graph ?? EMPTY_GRAPH;
+  const graph = observation?.graph ?? EMPTY_GRAPH;
 
   const { heatColor } = useTheme();
   const [threshold, setThreshold] = useState(0);
@@ -65,10 +65,10 @@ export function DetailView({
     () => new Set(),
   );
 
-  // Select all runs when scenario changes or on first load (render-time adjustment)
-  const [prevScenarioId, setPrevScenarioId] = useState(scenarioId);
-  if (scenarioId !== prevScenarioId) {
-    setPrevScenarioId(scenarioId);
+  // Select all runs when observation changes or on first load (render-time adjustment)
+  const [prevObservationId, setPrevObservationId] = useState(observationId);
+  if (observationId !== prevObservationId) {
+    setPrevObservationId(observationId);
     if (runs.length > 0) {
       setSelectedKeys(new Set(runs.map(runKey)));
     }
@@ -315,7 +315,7 @@ export function DetailView({
     );
   }
 
-  if (loading || !scenario) {
+  if (loading || !observation) {
     return (
       <div className="flex items-center justify-center h-full text-dim text-[11px] font-mono">
         loading…
@@ -329,20 +329,20 @@ export function DetailView({
       <div className="flex items-center justify-between gap-[12px] flex-wrap shrink-0">
         <div className="flex items-center gap-[8px]">
           <span className="text-[13px] font-semibold text-fg font-mono">
-            {scenario.name}
+            {observation.name}
           </span>
           <Badge
-            color={scenario.profile === "dev" ? C.textMid : C.amber}
-            bg={scenario.profile === "dev" ? C.surface3 : C.amber + "18"}
+            color={observation.profile === "dev" ? C.textMid : C.amber}
+            bg={observation.profile === "dev" ? C.surface3 : C.amber + "18"}
           >
-            {scenario.profile}
+            {observation.profile}
           </Badge>
-          {scenario.platform && (
+          {observation.platform && (
             <Badge color={C.cyan} bg={C.cyan + "18"}>
-              {scenario.platform}
+              {observation.platform}
             </Badge>
           )}
-          {scenario.pinned && (
+          {observation.pinned && (
             <span className="text-[10px] text-accent">📌 tracked</span>
           )}
         </div>
@@ -410,7 +410,7 @@ export function DetailView({
                 </button>
               </span>
               <span className="text-[9px] text-dim font-mono">
-                {displayedRuns.length}/{scenario.runs.length}
+                {displayedRuns.length}/{observation.runs.length}
               </span>
             </div>
           )}
@@ -455,7 +455,7 @@ export function DetailView({
           style={{ width: summaryWidth }}
         >
           <Summary
-            scenario={scenario}
+            observation={observation}
             selectedRuns={selectedRuns}
             heat={heat}
           />

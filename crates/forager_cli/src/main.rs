@@ -45,14 +45,14 @@ fn load_config(project_dir: &Path) -> Result<Config> {
 // ── Scenario TOML parsing ─────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
-struct ScenarioToml {
+struct BenchmarkToml {
     name: String,
     description: Option<String>,
-    steps: Vec<StepToml>,
+    steps: Vec<BenchmarkStepToml>,
 }
 
 #[derive(Debug, Deserialize)]
-struct StepToml {
+struct BenchmarkStepToml {
     name: String,
     forager: Option<String>,
     description: Option<String>,
@@ -70,11 +70,11 @@ struct ParsedStep {
     inputs: serde_json::Value,
 }
 
-fn parse_scenario(scenario_dir: &Path) -> Result<(String, Option<String>, Vec<ParsedStep>)> {
-    let toml_path = scenario_dir.join("scenario.toml");
+fn parse_benchmark(benchmark_dir: &Path) -> Result<(String, Option<String>, Vec<ParsedStep>)> {
+    let toml_path = benchmark_dir.join("benchmark.toml");
     let raw = std::fs::read_to_string(&toml_path)
         .with_context(|| format!("reading {}", toml_path.display()))?;
-    let scenario: ScenarioToml =
+    let scenario: BenchmarkToml =
         toml::from_str(&raw).with_context(|| format!("parsing {}", toml_path.display()))?;
 
     let mut steps = Vec::with_capacity(scenario.steps.len());
@@ -272,7 +272,7 @@ fn invoke_forager(
 // ── CLI ───────────────────────────────────────────────────────────────────────
 
 #[derive(Parser)]
-#[command(name = "forager", about = "Wezel scenario runner")]
+#[command(name = "forager", about = "Wezel benchmark runner")]
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,
@@ -280,11 +280,11 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Run a scenario against the current checkout.
+    /// Run a benchmark against the current checkout.
     Run {
-        /// Scenario name (matches .wezel/scenarios/<name>/).
+        /// Benchmark name (matches .wezel/benchmarks/<name>/).
         #[arg(short, long)]
-        scenario: String,
+        benchmark: String,
         /// Project root directory (defaults to current directory).
         #[arg(long)]
         project_dir: Option<PathBuf>,
@@ -297,32 +297,32 @@ fn main() -> Result<()> {
 
     match cli.cmd {
         Cmd::Run {
-            scenario,
+            benchmark,
             project_dir,
-        } => run_scenario(&scenario, project_dir.as_deref()),
+        } => run_benchmark(&benchmark, project_dir.as_deref()),
     }
 }
 
-fn run_scenario(scenario_name: &str, project_dir_arg: Option<&Path>) -> Result<()> {
+fn run_benchmark(benchmark_name: &str, project_dir_arg: Option<&Path>) -> Result<()> {
     let project_dir = match project_dir_arg {
         Some(p) => p.to_path_buf(),
         None => std::env::current_dir().context("getting current directory")?,
     };
 
     let config = load_config(&project_dir)?;
-    let scenario_dir = project_dir
+    let benchmark_dir = project_dir
         .join(".wezel")
-        .join("scenarios")
-        .join(scenario_name);
+        .join("benchmarks")
+        .join(benchmark_name);
 
-    if !scenario_dir.is_dir() {
+    if !benchmark_dir.is_dir() {
         bail!(
-            "scenario directory not found: {}",
-            scenario_dir.display()
+            "benchmark directory not found: {}",
+            benchmark_dir.display()
         );
     }
 
-    let (_name, _description, steps) = parse_scenario(&scenario_dir)?;
+    let (_name, _description, steps) = parse_benchmark(&benchmark_dir)?;
 
     // Detect current commit info from git.
     let commit_sha = git_current_sha(&project_dir)?;
@@ -332,17 +332,17 @@ fn run_scenario(scenario_name: &str, project_dir_arg: Option<&Path>) -> Result<(
     let commit_timestamp = git_commit_timestamp(&project_dir);
 
     log::info!(
-        "claiming job: upstream={} sha={} scenario={}",
+        "claiming job: upstream={} sha={} benchmark={}",
         project_upstream,
         &commit_sha[..7.min(commit_sha.len())],
-        scenario_name
+        benchmark_name
     );
 
     // Claim the job from Burrow.
     let claim_body = serde_json::json!({
         "project_upstream": project_upstream,
         "commit_sha": commit_sha,
-        "scenario_name": scenario_name,
+        "benchmark_name": benchmark_name,
         "commit_author": commit_author,
         "commit_message": commit_message,
         "commit_timestamp": commit_timestamp,
@@ -369,7 +369,7 @@ fn run_scenario(scenario_name: &str, project_dir_arg: Option<&Path>) -> Result<(
 
         // Apply patch if one exists.
         let patch_stem = step.diff.as_deref().unwrap_or(&step.name);
-        let patch_path = scenario_dir.join(format!("{patch_stem}.patch"));
+        let patch_path = benchmark_dir.join(format!("{patch_stem}.patch"));
         if patch_path.is_file() {
             log::info!("  applying patch: {}", patch_path.display());
             git_apply_patch(&project_dir, &patch_path)

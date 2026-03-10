@@ -237,7 +237,7 @@ export default function Shell() {
                       : "var(--c-text-dim)",
                   }}
                 >
-                  scenarios
+                  observations
                 </Link>
                 <Link
                   to={current ? `/project/${current.id}/commits` : "/"}
@@ -260,7 +260,7 @@ export default function Shell() {
           <div className="flex items-center gap-[12px]">
             {current && !onNewPage && (
               <div className="text-[10px] text-dim font-mono">
-                {overview.scenarioCount} commands · {overview.trackedCount}{" "}
+                {overview.observationCount} commands · {overview.trackedCount}{" "}
                 tracked
               </div>
             )}

@@ -1,4 +1,4 @@
-import type { Scenario, ForagerCommit, Project } from "./data";
+import type { Observation, ForagerCommit, Project } from "./data";
 
 export interface GithubCommit {
   sha: string;
@@ -10,14 +10,14 @@ export interface GithubCommit {
 }
 
 export interface Overview {
-  scenarioCount: number;
+  observationCount: number;
   trackedCount: number;
   latestCommitShortSha: string | null;
   latestCommitStatus: string | null;
 }
 
-/** Scenario as returned by the list endpoint (no graph). */
-export type ScenarioSummary = Omit<Scenario, "graph">;
+/** Observation as returned by the list endpoint (no graph). */
+export type ObservationSummary = Omit<Observation, "graph">;
 
 const BASE = import.meta.env.VITE_BURROW_URL ?? "";
 
@@ -69,9 +69,9 @@ function projectApi(projectId: number) {
   const p = `/api/project/${projectId}`;
   return {
     overview: () => get<Overview>(`${p}/overview`),
-    scenarios: () => get<ScenarioSummary[]>(`${p}/scenario`),
-    scenario: (id: number) => get<Scenario>(`${p}/scenario/${id}`),
-    togglePin: (id: number) => patch<Scenario>(`${p}/scenario/${id}/pin`),
+    observations: () => get<ObservationSummary[]>(`${p}/observation`),
+    observation: (id: number) => get<Observation>(`${p}/observation/${id}`),
+    togglePin: (id: number) => patch<Observation>(`${p}/observation/${id}/pin`),
     commits: () => get<ForagerCommit[]>(`${p}/commit`),
     commit: (sha: string) => get<ForagerCommit>(`${p}/commit/${sha}`),
     githubCommit: (sha: string) =>

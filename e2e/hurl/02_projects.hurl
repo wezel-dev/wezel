@@ -16,7 +16,7 @@ jsonpath "$.upstream" == "github.com/e2e-test/projects-test"
 GET {{base_url}}/api/project
 HTTP 200
 [Asserts]
-jsonpath "$[*].upstream" includes "github.com/e2e-test/projects-test"
+jsonpath "$[*].upstream" contains "github.com/e2e-test/projects-test"
 
 # Project overview
 GET {{base_url}}/api/project/{{project_id}}/overview

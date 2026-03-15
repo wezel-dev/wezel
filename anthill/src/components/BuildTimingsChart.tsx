@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { MONO } from "../lib/format";
 import type { CrateTopo } from "../lib/data";
 import type { HeatFn } from "../lib/theme";
@@ -152,6 +152,12 @@ function computeRows(topo: CrateTopo[], heat: Record<string, number>): Row[] {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+interface ContextMenu {
+  x: number;
+  y: number;
+  crate: string;
+}
+
 export function BuildTimingsChart({
   topo,
   heat,
@@ -160,6 +166,7 @@ export function BuildTimingsChart({
   focusedCrate,
   onNodeClick,
   onNodeFocus,
+  onBenchmark,
   bg,
   border,
   accentColor,
@@ -171,11 +178,14 @@ export function BuildTimingsChart({
   focusedCrate?: string | null;
   onNodeClick?: (name: string) => void;
   onNodeFocus?: (name: string | null) => void;
+  onBenchmark?: (name: string) => void;
   bg: string;
   border: string;
   accentColor?: string;
 }) {
   const [hoveredCrate, setHoveredCrate] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const rows = useMemo(() => computeRows(topo, heat), [topo, heat]);
 
@@ -267,9 +277,33 @@ export function BuildTimingsChart({
     [onNodeClick, onNodeFocus],
   );
 
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      if (!onBenchmark) return;
+      const el = (e.target as HTMLElement).closest("[data-crate]") as HTMLElement | null;
+      if (!el) return;
+      e.preventDefault();
+      setContextMenu({ x: e.clientX, y: e.clientY, crate: el.dataset.crate! });
+    },
+    [onBenchmark],
+  );
+
+  // Dismiss context menu on outside click
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [contextMenu]);
+
   const dimmed = activeSet !== null;
 
   return (
+    <>
     <div
       className="w-full h-full overflow-auto rounded"
       style={{
@@ -284,6 +318,7 @@ export function BuildTimingsChart({
         style={{ display: "block" }}
         onMouseOver={handleMouseOver}
         onClick={handleClick}
+        onContextMenu={handleContextMenu}
       >
         {/* Axis hint */}
         <text
@@ -373,5 +408,46 @@ export function BuildTimingsChart({
         })}
       </svg>
     </div>
+
+    {contextMenu && (
+      <div
+        ref={menuRef}
+        style={{
+          position: "fixed",
+          top: contextMenu.y,
+          left: contextMenu.x,
+          zIndex: 200,
+          background: "var(--c-surface)",
+          border: "1px solid var(--c-border)",
+          borderRadius: 6,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+          minWidth: 200,
+        }}
+      >
+        <button
+          onClick={() => {
+            onBenchmark?.(contextMenu.crate);
+            setContextMenu(null);
+          }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            width: "100%",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            padding: "8px 12px",
+            fontFamily: "var(--font-mono, monospace)",
+            fontSize: 11,
+            color: "var(--c-text)",
+            textAlign: "left",
+          }}
+        >
+          🚀 Benchmark changes to <strong>{contextMenu.crate}</strong>
+        </button>
+      </div>
+    )}
+    </>
   );
 }

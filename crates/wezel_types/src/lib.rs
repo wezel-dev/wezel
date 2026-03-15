@@ -203,6 +203,56 @@ pub struct ForagerRunReport {
     pub steps: Vec<ForagerStepReport>,
 }
 
+// ── Benchmark PR ─────────────────────────────────────────────────────────────
+
+/// Request body for `POST /api/project/{id}/benchmark/pr`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkPrRequest {
+    pub benchmark_name: String,
+    /// Map of repo-relative path → file content.
+    pub files: std::collections::HashMap<String, String>,
+}
+
+/// Response from `POST /api/project/{id}/benchmark/pr`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkPrResponse {
+    pub pr_url: String,
+}
+
+// ── Pheromone schema ──────────────────────────────────────────────────────────
+
+/// A single field in a pheromone's schema.json.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PheromoneField {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub field_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub deprecated: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deprecated_in: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub replaced_by: Option<String>,
+}
+
+/// A registered pheromone tool with its schema.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PheromoneInfo {
+    pub id: u64,
+    pub name: String,
+    pub github_repo: String,
+    pub version: String,
+    pub platforms: Vec<String>,
+    pub fields: Vec<PheromoneField>,
+    pub fetched_at: String,
+}
+
 // ── Pheromone ─────────────────────────────────────────────────────────────────
 
 /// Written by a `pheromone-<tool>` process to the path in `PHEROMONE_OUT`.

@@ -88,6 +88,22 @@ async fn migrate(pool: &PgPool) -> sqlx::Result<()> {
             github_login TEXT NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+        CREATE TABLE IF NOT EXISTS pheromones (
+            id          BIGSERIAL PRIMARY KEY,
+            name        TEXT NOT NULL UNIQUE,
+            github_repo TEXT NOT NULL,
+            version     TEXT NOT NULL,
+            schema_json TEXT NOT NULL,
+            fetched_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+        CREATE TABLE IF NOT EXISTS pheromone_schema_history (
+            id            BIGSERIAL PRIMARY KEY,
+            pheromone_id  BIGINT NOT NULL REFERENCES pheromones(id),
+            version       TEXT NOT NULL,
+            schema_json   TEXT NOT NULL,
+            fetched_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+            UNIQUE (pheromone_id, version)
+        );
         CREATE TABLE IF NOT EXISTS forager_tokens (
             id BIGSERIAL PRIMARY KEY,
             commit_id BIGINT NOT NULL REFERENCES commits(id),
@@ -110,7 +126,18 @@ async fn migrate(pool: &PgPool) -> sqlx::Result<()> {
         ALTER TABLE graph_edges ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'normal';
         ALTER TABLE graph_edges ADD PRIMARY KEY (source_id, target_id, kind);
         ALTER TABLE measurements ADD COLUMN IF NOT EXISTS step TEXT;
-        ALTER TABLE IF EXISTS scenarios RENAME TO observations;
+        ALTER TABLE observations ADD COLUMN IF NOT EXISTS pheromone_version TEXT;
+        DO $$ BEGIN
+            IF EXISTS (
+                SELECT 1 FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'scenarios'
+            ) AND NOT EXISTS (
+                SELECT 1 FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'observations'
+            ) THEN
+                ALTER TABLE scenarios RENAME TO observations;
+            END IF;
+        END $$;
         DO $$ BEGIN
             IF EXISTS (
                 SELECT 1 FROM information_schema.columns

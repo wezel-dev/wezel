@@ -17,6 +17,13 @@ pub struct GlobalConfig {
 pub struct ProjectConfig {
     pub server_url: Option<String>,
     pub username: Option<String>,
+    /// Override where pheromone binaries are stored (default: `{exe_dir}/pheromones/`).
+    pub pheromone_dir: Option<String>,
+    /// Override where the event queue is stored (default: `~/.wezel/queue/`).
+    pub queue_dir: Option<String>,
+    /// List of registry URIs for benchmark adapters.
+    /// Each entry can be any valid URI (https://, file://, etc.).
+    pub registries: Option<Vec<String>>,
 }
 
 /// Fully resolved configuration after merging all layers.
@@ -24,6 +31,12 @@ pub struct ProjectConfig {
 pub struct Config {
     pub server_url: String,
     pub username: String,
+    /// Where pheromone binaries live.
+    pub pheromone_dir: Option<String>,
+    /// Where queued events live.
+    pub queue_dir: Option<String>,
+    /// Configured registry URIs.
+    pub registries: Vec<String>,
 }
 
 /// Walk up from `start` looking for a `.wezel/config.toml`.
@@ -62,6 +75,9 @@ fn load(project_config_path: &Path) -> Option<Config> {
     let defaults = ProjectConfig {
         server_url: None,
         username: Some(whoami::username()),
+        pheromone_dir: None,
+        queue_dir: None,
+        registries: None,
     };
 
     let mut figment = Figment::new().merge(Serialized::defaults(defaults));
@@ -97,6 +113,9 @@ fn load(project_config_path: &Path) -> Option<Config> {
             .username
             .filter(|s| !s.is_empty())
             .unwrap_or_else(whoami::username),
+        pheromone_dir: resolved.pheromone_dir,
+        queue_dir: resolved.queue_dir,
+        registries: resolved.registries.unwrap_or_default(),
     })
 }
 

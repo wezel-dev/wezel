@@ -1,4 +1,4 @@
-import type { Observation, ForagerCommit, Project } from "./data";
+import type { Observation, ForagerCommit, Project, Pheromone } from "./data";
 
 export interface GithubCommit {
   sha: string;
@@ -84,6 +84,10 @@ function projectApi(projectId: number) {
 
 export type ProjectApi = ReturnType<typeof projectApi>;
 
+export interface BenchmarkPrResponse {
+  prUrl: string;
+}
+
 export const api = {
   projects: () => get<Project[]>("/api/project"),
   createProject: (name: string, upstream: string) =>
@@ -91,4 +95,25 @@ export const api = {
   renameProject: (id: number, name: string) =>
     patch<Project>(`/api/project/${id}`, { name }),
   forProject: projectApi,
+  pheromones: () => get<Pheromone[]>("/api/pheromones"),
+  admin: {
+    pheromones: () => get<Pheromone[]>("/api/admin/pheromone"),
+    registerPheromone: (githubRepo: string) =>
+      post<Pheromone>("/api/admin/pheromone", { github_repo: githubRepo }),
+    fetchPheromone: (name: string) =>
+      post<Pheromone>(`/api/admin/pheromone/${name}/fetch`, {}),
+  },
 };
+
+export function benchmarkPrApi(projectId: number) {
+  return {
+    createPr: (
+      benchmarkName: string,
+      files: Record<string, string>,
+    ): Promise<BenchmarkPrResponse> =>
+      post<BenchmarkPrResponse>(
+        `/api/project/${projectId}/benchmark/pr`,
+        { benchmarkName, files },
+      ),
+  };
+}

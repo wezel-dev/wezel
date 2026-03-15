@@ -8,6 +8,7 @@ import {
   Check,
   X,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { ThemeCtx, THEMES, THEME_ORDER, type ThemeKey } from "./lib/theme";
 import { useOverview } from "./lib/hooks";
@@ -112,6 +113,7 @@ export default function Shell() {
     current != null &&
     location.pathname.startsWith(`/project/${current.id}/commit`);
   const onNewPage = location.pathname === "/projects/create";
+  const onAdminPage = location.pathname.startsWith("/admin");
 
   return (
     <ThemeCtx.Provider value={{ heatColor: theme.heatColor, dark: theme.dark }}>
@@ -264,6 +266,14 @@ export default function Shell() {
                 tracked
               </div>
             )}
+            <Link
+              to="/admin/pheromones"
+              title="Pheromone admin"
+              className="flex items-center no-underline"
+              style={{ color: onAdminPage ? "var(--c-accent)" : "var(--c-text-dim)" }}
+            >
+              <Settings size={13} />
+            </Link>
             <button
               onClick={() =>
                 setThemeKeyPersist((k) => {

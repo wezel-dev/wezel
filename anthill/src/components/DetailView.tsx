@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { X } from "lucide-react";
+import { X, Rocket } from "lucide-react";
 import { useTheme } from "../lib/theme";
 import { C, alpha } from "../lib/colors";
 import { computeHeat } from "../lib/data";
@@ -10,7 +10,9 @@ import { PanelHandle } from "./PanelHandle";
 import { RunList } from "./RunList";
 import { Summary } from "./Summary";
 import { BuildTimingsChart } from "./BuildTimingsChart";
+import { BenchmarkCreatorModal } from "./BenchmarkCreatorModal";
 import { useKeyboardNav } from "../lib/useKeyboardNav";
+import { useProject } from "../lib/useProject";
 
 const EMPTY_RUNS: {
   user: string;
@@ -38,7 +40,11 @@ export function DetailView({
   keyboardActive?: boolean;
   userFilter?: string[];
 }) {
+  const { current: currentProject } = useProject();
   const { observation: rawObservation, loading, error } = useObservation(observationId);
+  const [benchmarkModal, setBenchmarkModal] = useState<{ open: boolean; initialCrate?: string }>({
+    open: false,
+  });
 
   const observation = useMemo(() => {
     if (!rawObservation) return null;
@@ -302,6 +308,10 @@ export function DetailView({
     setFocusedCrate((prev) => (prev === crateName ? null : crateName));
   }, []);
 
+  const handleBenchmarkCrate = useCallback((crateName: string) => {
+    setBenchmarkModal({ open: true, initialCrate: crateName });
+  }, []);
+
   // ── Loading / error guards (all hooks are above) ──────────────────────────
 
   if (error) {
@@ -377,6 +387,16 @@ export function DetailView({
             </span>
           </label>
           <HeatLegend />
+          {currentProject && (
+            <button
+              onClick={() => setBenchmarkModal({ open: true })}
+              title="Create benchmark from this observation"
+              className="flex items-center gap-[4px] bg-transparent border-none cursor-pointer text-dim text-[10px] font-mono hover:text-accent transition-colors"
+            >
+              <Rocket size={12} />
+              benchmark
+            </button>
+          )}
         </div>
       </div>
 
@@ -440,6 +460,7 @@ export function DetailView({
             focusedCrate={focusedCrate}
             onNodeClick={handleNodeClick}
             onNodeFocus={handleNodeFocus}
+            onBenchmark={currentProject ? handleBenchmarkCrate : undefined}
             bg={C.surface2}
             border={C.border}
             accentColor={C.accent}
@@ -461,6 +482,15 @@ export function DetailView({
           />
         </div>
       </div>
+
+      {benchmarkModal.open && observation && currentProject && (
+        <BenchmarkCreatorModal
+          observation={observation}
+          projectId={currentProject.id}
+          initialCrate={benchmarkModal.initialCrate}
+          onClose={() => setBenchmarkModal({ open: false })}
+        />
+      )}
     </div>
   );
 }

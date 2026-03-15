@@ -1,6 +1,9 @@
 mod cmd;
 mod config;
+mod daemon;
 mod flush;
+mod pheromone_mgr;
+mod queue;
 mod shell;
 
 use log::{debug, warn};
@@ -370,6 +373,17 @@ enum Command {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
+    /// Run the background daemon (flush queue + update pheromones).
+    ///
+    /// Normally spawned automatically. Use `--foreground` to run in the
+    /// foreground (used internally by the auto-spawn path).
+    Daemon {
+        /// Run in the foreground (do not double-fork).
+        #[arg(long)]
+        foreground: bool,
+    },
+    /// One-shot flush: send queued events to burrow and check pheromone updates.
+    Sync,
 }
 
 fn main() -> ExitCode {
@@ -412,5 +426,28 @@ fn main() -> ExitCode {
                 ExitCode::FAILURE
             }
         },
+        Command::Daemon { foreground } => {
+            if foreground {
+                daemon::run_daemon();
+            } else {
+                if let Err(e) = daemon::spawn_detached() {
+                    eprintln!("wezel: failed to spawn daemon: {e}");
+                    return ExitCode::FAILURE;
+                }
+            }
+            ExitCode::SUCCESS
+        }
+        Command::Sync => {
+            let cwd = std::env::current_dir().unwrap_or_default();
+            let Some((_, config)) = config::discover(&cwd) else {
+                eprintln!("wezel: no project config found (run `wezel setup` first)");
+                return ExitCode::FAILURE;
+            };
+            let n = queue::flush_queue(&config.server_url);
+            println!("wezel sync: flushed {n} event(s)");
+            pheromone_mgr::update_pheromones(&config.server_url, &pheromones_dir());
+            println!("wezel sync: pheromone check done");
+            ExitCode::SUCCESS
+        }
     }
 }

@@ -12,6 +12,7 @@ const MeasurementDetailPage = lazy(
 );
 const NewProjectPage = lazy(() => import("./routes/NewProjectPage"));
 const CommitsListPage = lazy(() => import("./routes/CommitsListPage"));
+const PheromoneAdminPage = lazy(() => import("./routes/PheromoneAdminPage"));
 
 const router = createBrowserRouter([
   {
@@ -59,6 +60,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense>
             <NewProjectPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "admin/pheromones",
+        element: (
+          <Suspense>
+            <PheromoneAdminPage />
           </Suspense>
         ),
       },

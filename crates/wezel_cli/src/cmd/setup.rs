@@ -31,6 +31,9 @@ pub fn setup_cmd(server_url: Option<&str>) -> anyhow::Result<()> {
     let config = ProjectConfig {
         server_url: Some(server_url),
         username: None,
+        pheromone_dir: None,
+        queue_dir: None,
+        registries: None,
     };
 
     let contents = toml::to_string_pretty(&config)?;

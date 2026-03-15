@@ -1507,6 +1507,377 @@ async fn get_health() -> Json<Value> {
     Json(serde_json::json!({"status": "ok"}))
 }
 
+// ── Pheromone registry ────────────────────────────────────────────────────────
+
+#[derive(serde::Deserialize)]
+struct AdminPheromoneBody {
+    github_repo: String,
+}
+
+#[derive(serde::Deserialize)]
+struct BenchmarkPrBody {
+    #[serde(rename = "benchmarkName")]
+    benchmark_name: String,
+    files: std::collections::HashMap<String, String>,
+}
+
+fn pheromone_json_from_row(row: &models::PheromoneRow) -> models::PheromoneJson {
+    let schema: Value = serde_json::from_str(&row.schema_json).unwrap_or(Value::Null);
+    let platforms = schema
+        .get("platforms")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default();
+    let fields = schema
+        .get("fields")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .map(|f| models::PheromoneFieldJson {
+                    name: f
+                        .get("name")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_string(),
+                    field_type: f
+                        .get("type")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("unknown")
+                        .to_string(),
+                    description: f
+                        .get("description")
+                        .and_then(|v| v.as_str())
+                        .map(str::to_string),
+                    deprecated: f
+                        .get("deprecated")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false),
+                    deprecated_in: f
+                        .get("deprecatedIn")
+                        .and_then(|v| v.as_str())
+                        .map(str::to_string),
+                    replaced_by: f
+                        .get("replacedBy")
+                        .and_then(|v| v.as_str())
+                        .map(str::to_string),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    models::PheromoneJson {
+        id: row.id,
+        name: row.name.clone(),
+        github_repo: row.github_repo.clone(),
+        version: row.version.clone(),
+        platforms,
+        fields,
+        fetched_at: row.fetched_at.clone(),
+    }
+}
+
+async fn fetch_and_store_pheromone(
+    pool: &PgPool,
+    github_repo: &str,
+) -> ApiResult<models::PheromoneJson> {
+    let client = Client::new();
+    let url = format!("https://api.github.com/repos/{github_repo}/releases/latest");
+    let mut req = client.get(&url).header("User-Agent", "wezel-burrow");
+    if let Ok(token) = std::env::var("GITHUB_TOKEN") {
+        let token = token.trim().to_string();
+        if !token.is_empty() {
+            req = req.bearer_auth(token);
+        }
+    }
+    let resp = req.send().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+    if !resp.status().is_success() {
+        return Err(StatusCode::BAD_GATEWAY);
+    }
+    let release: Value = resp.json().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+
+    let assets = release
+        .get("assets")
+        .and_then(|v| v.as_array())
+        .ok_or(StatusCode::BAD_GATEWAY)?;
+    let schema_url = assets
+        .iter()
+        .find(|a| a.get("name").and_then(|v| v.as_str()) == Some("schema.json"))
+        .and_then(|a| a.get("browser_download_url"))
+        .and_then(|v| v.as_str())
+        .ok_or(StatusCode::NOT_FOUND)?
+        .to_string();
+
+    let mut schema_req = client.get(&schema_url).header("User-Agent", "wezel-burrow");
+    if let Ok(token) = std::env::var("GITHUB_TOKEN") {
+        let token = token.trim().to_string();
+        if !token.is_empty() {
+            schema_req = schema_req.bearer_auth(token);
+        }
+    }
+    let schema_resp = schema_req
+        .send()
+        .await
+        .map_err(|_| StatusCode::BAD_GATEWAY)?;
+    let schema: Value = schema_resp
+        .json()
+        .await
+        .map_err(|_| StatusCode::BAD_GATEWAY)?;
+
+    let name = schema
+        .get("name")
+        .and_then(|v| v.as_str())
+        .unwrap_or_else(|| github_repo.split('/').last().unwrap_or(github_repo))
+        .to_string();
+    let version = schema
+        .get("version")
+        .and_then(|v| v.as_str())
+        .unwrap_or("0.0.0")
+        .to_string();
+    let schema_str = serde_json::to_string(&schema).map_err(ise)?;
+
+    let row = sqlx::query_as::<_, models::PheromoneRow>(
+        "INSERT INTO pheromones (name, github_repo, version, schema_json)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (name) DO UPDATE SET github_repo = $2, version = $3, schema_json = $4, fetched_at = now()
+         RETURNING id, name, github_repo, version, schema_json, fetched_at::TEXT as fetched_at",
+    )
+    .bind(&name)
+    .bind(github_repo)
+    .bind(&version)
+    .bind(&schema_str)
+    .fetch_one(pool)
+    .await
+    .map_err(ise)?;
+
+    let _ = sqlx::query(
+        "INSERT INTO pheromone_schema_history (pheromone_id, version, schema_json)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (pheromone_id, version) DO NOTHING",
+    )
+    .bind(row.id)
+    .bind(&version)
+    .bind(&schema_str)
+    .execute(pool)
+    .await;
+
+    Ok(pheromone_json_from_row(&row))
+}
+
+async fn get_pheromones(
+    State(pool): State<PgPool>,
+) -> ApiResult<Json<Vec<models::PheromoneJson>>> {
+    let rows = sqlx::query_as::<_, models::PheromoneRow>(
+        "SELECT id, name, github_repo, version, schema_json, fetched_at::TEXT as fetched_at
+         FROM pheromones ORDER BY name",
+    )
+    .fetch_all(&pool)
+    .await
+    .map_err(ise)?;
+    Ok(Json(rows.iter().map(pheromone_json_from_row).collect()))
+}
+
+async fn get_admin_pheromones(
+    State(pool): State<PgPool>,
+) -> ApiResult<Json<Vec<models::PheromoneJson>>> {
+    get_pheromones(State(pool)).await
+}
+
+async fn post_admin_pheromone(
+    State(pool): State<PgPool>,
+    Json(body): Json<AdminPheromoneBody>,
+) -> ApiResult<(StatusCode, Json<models::PheromoneJson>)> {
+    let pheromone = fetch_and_store_pheromone(&pool, &body.github_repo).await?;
+    Ok((StatusCode::CREATED, Json(pheromone)))
+}
+
+async fn post_admin_pheromone_fetch(
+    Path(name): Path<String>,
+    State(pool): State<PgPool>,
+) -> ApiResult<Json<models::PheromoneJson>> {
+    let row = sqlx::query_as::<_, models::PheromoneRow>(
+        "SELECT id, name, github_repo, version, schema_json, fetched_at::TEXT as fetched_at
+         FROM pheromones WHERE name = $1",
+    )
+    .bind(&name)
+    .fetch_optional(&pool)
+    .await
+    .map_err(ise)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+    let pheromone = fetch_and_store_pheromone(&pool, &row.github_repo).await?;
+    Ok(Json(pheromone))
+}
+
+// ── GitHub PR endpoint ────────────────────────────────────────────────────────
+
+async fn github_api<T: serde::de::DeserializeOwned>(
+    client: &Client,
+    method: reqwest::Method,
+    url: &str,
+    token: &str,
+    body: Option<Value>,
+) -> ApiResult<T> {
+    let mut req = client
+        .request(method, url)
+        .header("User-Agent", "wezel-burrow")
+        .header("Accept", "application/vnd.github+json")
+        .bearer_auth(token);
+    if let Some(b) = body {
+        req = req.json(&b);
+    }
+    let resp = req.send().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+    if !resp.status().is_success() {
+        let code = resp.status().as_u16();
+        return Err(StatusCode::from_u16(code).unwrap_or(StatusCode::BAD_GATEWAY));
+    }
+    resp.json().await.map_err(|_| StatusCode::BAD_GATEWAY)
+}
+
+async fn post_benchmark_pr(
+    Path(project_id): Path<i64>,
+    State(pool): State<PgPool>,
+    Json(body): Json<BenchmarkPrBody>,
+) -> ApiResult<Json<Value>> {
+    let project =
+        sqlx::query_as::<_, Project>("SELECT id, name, upstream FROM projects WHERE id = $1")
+            .bind(project_id)
+            .fetch_optional(&pool)
+            .await
+            .map_err(ise)?
+            .ok_or(StatusCode::NOT_FOUND)?;
+
+    let (owner, repo) = github_owner_repo(&project.upstream).ok_or(StatusCode::BAD_REQUEST)?;
+
+    let token = std::env::var("GITHUB_TOKEN")
+        .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+    let token = token.trim();
+    if token.is_empty() {
+        return Err(StatusCode::SERVICE_UNAVAILABLE);
+    }
+
+    let client = Client::new();
+
+    // Get repo default branch
+    let repo_info: Value = github_api(
+        &client,
+        reqwest::Method::GET,
+        &format!("https://api.github.com/repos/{owner}/{repo}"),
+        token,
+        None,
+    )
+    .await?;
+    let default_branch = repo_info["default_branch"]
+        .as_str()
+        .unwrap_or("main")
+        .to_string();
+
+    // Get branch SHA
+    let ref_info: Value = github_api(
+        &client,
+        reqwest::Method::GET,
+        &format!(
+            "https://api.github.com/repos/{owner}/{repo}/git/ref/heads/{default_branch}"
+        ),
+        token,
+        None,
+    )
+    .await?;
+    let base_sha = ref_info["object"]["sha"]
+        .as_str()
+        .ok_or(StatusCode::BAD_GATEWAY)?
+        .to_string();
+
+    // Create blobs for each file
+    let mut tree_items = Vec::new();
+    for (path, content) in &body.files {
+        let blob: Value = github_api(
+            &client,
+            reqwest::Method::POST,
+            &format!("https://api.github.com/repos/{owner}/{repo}/git/blobs"),
+            token,
+            Some(serde_json::json!({
+                "content": content,
+                "encoding": "utf-8"
+            })),
+        )
+        .await?;
+        let blob_sha = blob["sha"].as_str().ok_or(StatusCode::BAD_GATEWAY)?;
+        tree_items.push(serde_json::json!({
+            "path": path,
+            "mode": "100644",
+            "type": "blob",
+            "sha": blob_sha
+        }));
+    }
+
+    // Create tree
+    let tree: Value = github_api(
+        &client,
+        reqwest::Method::POST,
+        &format!("https://api.github.com/repos/{owner}/{repo}/git/trees"),
+        token,
+        Some(serde_json::json!({
+            "base_tree": base_sha,
+            "tree": tree_items
+        })),
+    )
+    .await?;
+    let tree_sha = tree["sha"].as_str().ok_or(StatusCode::BAD_GATEWAY)?;
+
+    // Create commit
+    let commit: Value = github_api(
+        &client,
+        reqwest::Method::POST,
+        &format!("https://api.github.com/repos/{owner}/{repo}/git/commits"),
+        token,
+        Some(serde_json::json!({
+            "message": format!("wezel: add {} benchmark", body.benchmark_name),
+            "tree": tree_sha,
+            "parents": [base_sha]
+        })),
+    )
+    .await?;
+    let commit_sha = commit["sha"].as_str().ok_or(StatusCode::BAD_GATEWAY)?;
+
+    // Create branch
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let branch_name = format!("wezel/benchmark-{}-{ts}", body.benchmark_name);
+    let _: Value = github_api(
+        &client,
+        reqwest::Method::POST,
+        &format!("https://api.github.com/repos/{owner}/{repo}/git/refs"),
+        token,
+        Some(serde_json::json!({
+            "ref": format!("refs/heads/{branch_name}"),
+            "sha": commit_sha
+        })),
+    )
+    .await?;
+
+    // Create PR
+    let pr: Value = github_api(
+        &client,
+        reqwest::Method::POST,
+        &format!("https://api.github.com/repos/{owner}/{repo}/pulls"),
+        token,
+        Some(serde_json::json!({
+            "title": format!("wezel: add {} benchmark", body.benchmark_name),
+            "head": branch_name,
+            "base": default_branch,
+            "body": "This PR was created by [wezel](https://wezel.dev) to add a new benchmark."
+        })),
+    )
+    .await?;
+    let pr_url = pr["html_url"].as_str().ok_or(StatusCode::BAD_GATEWAY)?;
+
+    Ok(Json(serde_json::json!({ "prUrl": pr_url })))
+}
+
 async fn require_auth(
     State(pool): State<PgPool>,
     jar: CookieJar,
@@ -1568,6 +1939,18 @@ async fn main() {
             get(get_github_commit_p),
         )
         .route("/api/project/{project_id}/user", get(get_users))
+        .route(
+            "/api/project/{project_id}/benchmark/pr",
+            post(post_benchmark_pr),
+        )
+        .route(
+            "/api/admin/pheromone",
+            get(get_admin_pheromones).post(post_admin_pheromone),
+        )
+        .route(
+            "/api/admin/pheromone/{name}/fetch",
+            post(post_admin_pheromone_fetch),
+        )
         .route("/api/overview", get(get_overview))
         .route("/api/observation", get(get_observations))
         .route("/api/observation/{id}", get(get_observation))
@@ -1583,6 +1966,7 @@ async fn main() {
         .route("/api/events", post(ingest_events))
         .route("/api/forager/claim", post(post_forager_claim))
         .route("/api/forager/run", post(post_forager_run))
+        .route("/api/pheromones", get(get_pheromones))
         .route("/auth/github", get(auth::login))
         .route("/auth/github/callback", get(auth::callback))
         .route("/auth/me", get(auth::me))

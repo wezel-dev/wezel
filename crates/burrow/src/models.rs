@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
 // ── DB rows ──────────────────────────────────────────────────────────────────
@@ -200,6 +200,46 @@ pub struct OverviewJson {
     pub latest_commit_short_sha: Option<String>,
     #[serde(rename = "latestCommitStatus")]
     pub latest_commit_status: Option<String>,
+}
+
+// ── Pheromone registry ───────────────────────────────────────────────────────
+
+#[derive(FromRow)]
+pub struct PheromoneRow {
+    pub id: i64,
+    pub name: String,
+    pub github_repo: String,
+    pub version: String,
+    pub schema_json: String,
+    pub fetched_at: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct PheromoneFieldJson {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub field_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "std::ops::Not::not", default)]
+    pub deprecated: bool,
+    #[serde(rename = "deprecatedIn", skip_serializing_if = "Option::is_none")]
+    pub deprecated_in: Option<String>,
+    #[serde(rename = "replacedBy", skip_serializing_if = "Option::is_none")]
+    pub replaced_by: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct PheromoneJson {
+    pub id: i64,
+    pub name: String,
+    #[serde(rename = "githubRepo")]
+    pub github_repo: String,
+    pub version: String,
+    pub platforms: Vec<String>,
+    pub fields: Vec<PheromoneFieldJson>,
+    #[serde(rename = "fetchedAt")]
+    pub fetched_at: String,
 }
 
 // ── GitHub proxy ─────────────────────────────────────────────────────────────

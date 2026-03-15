@@ -72,6 +72,58 @@ export interface ForagerCommit {
   measurements: Measurement[];
 }
 
+// ── Pheromone registry ───────────────────────────────────────────────────────
+
+export interface PheromoneField {
+  name: string;
+  type: string;
+  description?: string;
+  deprecated?: boolean;
+  deprecatedIn?: string;
+  replacedBy?: string;
+}
+
+export interface Pheromone {
+  id: number;
+  name: string;
+  githubRepo: string;
+  version: string;
+  platforms: string[];
+  fields: PheromoneField[];
+  fetchedAt: string;
+}
+
+// ── Registry adapter types ────────────────────────────────────────────────────
+
+export interface RegistryUiField {
+  id: string;
+  label: string;
+  type: "crate-picker" | "select" | "string";
+  description?: string;
+  options?: string[];
+  default?: string;
+}
+
+export interface RegistryStep {
+  name: string;
+  tool: string;
+  inputs: Record<string, unknown>;
+}
+
+export interface RegistryTemplate {
+  id: string;
+  name: string;
+  description: string;
+  steps: RegistryStep[];
+  uiSchema: { fields: RegistryUiField[] };
+}
+
+export interface RegistryAdapter {
+  toolchain: string;
+  detectPatterns: string[];
+  templates: RegistryTemplate[];
+}
+
 // ── Heat computation ─────────────────────────────────────────────────────────
 
 export function computeHeat(

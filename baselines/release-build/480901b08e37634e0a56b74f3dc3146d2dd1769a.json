@@ -1,0 +1,22 @@
+{
+  "commit": "480901b08e37634e0a56b74f3dc3146d2dd1769a",
+  "timestamp": "2026-05-09T08:02:02+0000",
+  "summaries": {
+    "wezel-binary-size": 8895784.0
+  },
+  "measurements": [
+    {
+      "step": "build-release",
+      "measurements": []
+    },
+    {
+      "step": "measure-size",
+      "measurements": [
+        {
+          "name": "target/release/wezel",
+          "value": 8895784
+        }
+      ]
+    }
+  ]
+}

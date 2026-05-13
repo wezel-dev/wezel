@@ -1517,7 +1517,7 @@ dependencies = [
 
 [[package]]
 name = "wezel_bench"
-version = "0.1.0"
+version = "0.1.0-pre"
 dependencies = [
  "anyhow",
  "dirs",
@@ -1540,7 +1540,7 @@ dependencies = [
 
 [[package]]
 name = "wezel_cli"
-version = "0.1.0"
+version = "0.1.0-pre"
 dependencies = [
  "anyhow",
  "clap",
@@ -1569,7 +1569,7 @@ dependencies = [
 
 [[package]]
 name = "wezel_types"
-version = "0.1.0"
+version = "0.1.0-pre"
 dependencies = [
  "schemars",
  "serde",

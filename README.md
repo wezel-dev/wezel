@@ -1,55 +1,42 @@
 # Wezel — Your build, always at its best.
 
-Wezel is an open-source build observability toolsuite. It tracks how your builds behave over time, surfaces which scenarios hurt your team most, and alerts you the moment a commit causes a regression — before it becomes your new normal.
+Wezel is an open-source build observability toolsuite - think of benchmarking, but for your builds. It makes it easy to figure out when your builds have regressed.
 
-## Why Wezel
+## Getting started
 
-Build time creep is invisible until it's unbearable. A change that adds 15 seconds to your most common build scenario compounds across every developer, every day. By the time it's noticeable, it's baked into your baseline.
+Wezel tracks your build health via *experiments*. An experiment consists of several *steps* (such as running the build, applying patches or running commands). Each step can produce zero or more *outcomes* (artifacts): sizes of your artifacts, profiling info from the compiler, exact timings of your build. Outcomes can then be distilled into a single numerical value (which is called "summarization") that can then be used to track your build health.
 
-Wezel catches regressions at the commit level, while they're still easy to revisit.
+An example experiment, straight from our repository is [an experiment measuring artifact size of a release binary](.wezel/experiments/release-build/experiment.toml).
+```toml
+description = "Measures release-binary size of the wezel CLI"
 
-## Getting Started
+# Each experiment runs in a fresh copy of your repository, hence we need to run the build first.
+[step.build-release]
+# Tools are responsible for executing actions on your behalf. Here we're using `exec` step to execute a program on our behalf. 
+# `exec` does not produce any outcomes by itself.
+tool = "exec"
+# Each step has it's own schema for arguments it accepts. `exec` accepts `cmd`, `env` and `cwd`.
+cmd = "cargo build --release --workspace"
 
-### Prerequisites
-
-- Rust (see `rust-toolchain.toml` for the pinned version)
-- PostgreSQL (for Burrow)
-- Docker / Docker Compose (optional, for local stack)
-
-### Run the local stack
-
-
-```sh
-docker compose up
+# Steps are ran sequentially, so `measure-size` runs after a successful execution of `build-release` step.
+[step.measure-size]
+# `measure-size` uses another tool called `filesize`. The outcome of that tool is a set of file sizes for all files matching a provided glob.
+tool = "filesize"
+glob = "target/release/wezel"
+# Finally, we need to extract a metric value that we can bisect over:
+# we want to find an exact commit that causes a regression in the size of target/release/wezel.
+summary.wezel-binary-size = { measurement = "target/release/wezel" }
 ```
 
-### Build from source
+Running an experiment is as simple as `wezel experiment run EXPERIMENT_NAME`. All experiments need to live in separate directories of `.wezel/experiments/` subdirectory of your project where the name of subdirectory becomes a name of experiment.
 
-```sh
-cargo build --workspace
-```
+### Setup
+Wezel is a CLI that can be installed from GH assets. 
 
-### Install Pheromone
-
-Add the hook to your shell (example for `zsh`):
-
-```sh
-eval "$(pheromone init zsh)"
-```
-
-Then configure your Anthill endpoint:
-
-```sh
-wezel config set endpoint http://your-anthill-instance
-```
-
-From that point on, every build you run is observed and flushed automatically.
-
-## Self-hosting
-
-Wezel is designed to be fully self-hosted. No telemetry, no vendor lock-in. Run Burrow and Anthill on your own infrastructure and keep your build data on your own machines.
-
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) for a deeper dive into design decisions and component interactions.
+### Tools
+Tool implementations are not hard-coded. They are external binaries provided by third parties. Before you run wezel in your project, you need to run `wezel setup` in order to generate a `.wezel/config.toml` file. A `tools` section of `config.toml` defines which tools are available in experiments and how they can be obtained by wezel.
+See [.wezel/config.toml](.wezel/config.toml) for reference.
+This also means that you can create your own tools to share with the world.
 
 ## License
 

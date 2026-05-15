@@ -188,13 +188,14 @@ pub fn run_lint(
             let schema_path = workspace.schema_path(&step.forager);
             match std::fs::read_to_string(&schema_path) {
                 Ok(raw) => {
-                    if serde_json::from_str::<serde_json::Value>(&raw).is_err() {
+                    if let Err(e) =
+                        serde_json::from_str::<wezel_types::ForagerSchema>(&raw)
+                    {
                         diagnostics.push(LintDiagnostic {
                             step: step.name.clone(),
                             message: format!(
-                                "cached schema for `forager-{}` is invalid JSON ({})",
+                                "cached schema for `forager-{}` does not match the current format ({e}) — run `wezel tool sync` to refresh",
                                 step.forager,
-                                schema_path.display()
                             ),
                         });
                     }

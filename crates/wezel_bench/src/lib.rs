@@ -9,7 +9,7 @@ pub mod workspace;
 
 pub use workspace::Workspace;
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 use std::process::Command;
 
@@ -67,7 +67,7 @@ pub struct ToolsSection {
     /// field of an experiment step (e.g. `tool = "exec"` looks up
     /// `[tools.foragers.exec]`).
     #[serde(default)]
-    pub foragers: HashMap<String, ToolSource>,
+    pub foragers: BTreeMap<String, ToolSource>,
 }
 
 /// Where to obtain a tool binary. Currently only GitHub releases.
@@ -146,7 +146,7 @@ pub struct ExperimentStepToml {
     /// Remaining fields are forwarded as forager inputs (e.g. `cmd`/`env`/`cwd` for `exec`, `package` for `llvm-lines`).
     #[serde(flatten)]
     #[schemars(with = "HashMap<String, serde_json::Value>")]
-    pub rest: HashMap<String, toml::Value>,
+    pub rest: IndexMap<String, toml::Value>,
 }
 
 /// Summary definition embedded under a step. The summary's `name` and `step`
@@ -161,7 +161,8 @@ pub struct EmbeddedSummaryToml {
     pub aggregation: Option<Aggregation>,
     /// Tag key=value filters applied before aggregation.
     #[serde(default)]
-    pub filter: HashMap<String, String>,
+    #[schemars(with = "HashMap<String, String>")]
+    pub filter: IndexMap<String, String>,
     /// Trigger bisection when this summary regresses.
     #[serde(default = "bool_true")]
     pub bisect: bool,

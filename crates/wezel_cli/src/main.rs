@@ -802,7 +802,7 @@ fn main() -> ExitCode {
 }
 
 fn tool_sync(ws: &wezel_bench::Workspace) -> anyhow::Result<()> {
-    let foragers: Vec<&String> = ws.config.tools.foragers.keys().collect();
+    let foragers: Vec<String> = ws.config.tools.foragers.keys().cloned().collect();
     if foragers.is_empty() {
         println!("No tools declared under [tools] in .wezel/config.toml.");
         return Ok(());
@@ -811,8 +811,8 @@ fn tool_sync(ws: &wezel_bench::Workspace) -> anyhow::Result<()> {
     let mut fetcher = fetcher::ConfigFetcher::new(ws)?;
     let mut installed = 0usize;
     let mut skipped = 0usize;
-    for name in foragers {
-        if ws.resolve_plugin(name).is_some() && ws.schema_path(name).is_file() {
+    for name in &foragers {
+        if ws.resolve_plugin(name).is_some() && sidecar_is_current(ws, name) {
             println!("  forager-{name}  up to date");
             skipped += 1;
             continue;
@@ -821,6 +821,46 @@ fn tool_sync(ws: &wezel_bench::Workspace) -> anyhow::Result<()> {
         installed += 1;
     }
 
+    write_schema_bundle(ws, &foragers)?;
+
     println!("\n{installed} installed, {skipped} up to date.");
     Ok(())
+}
+
+/// Read every installed forager's sidecar, build the editor-facing bundle,
+/// and write it to `.wezel/schema.json`. Called after `tool_sync` installs
+/// or refreshes plugins so the bundle is always in sync with what's on disk.
+fn write_schema_bundle(ws: &wezel_bench::Workspace, foragers: &[String]) -> anyhow::Result<()> {
+    let mut sidecars = Vec::with_capacity(foragers.len());
+    for name in foragers {
+        let path = ws.schema_path(name);
+        let raw = std::fs::read_to_string(&path)
+            .with_context(|| format!("reading sidecar {}", path.display()))?;
+        let schema: wezel_types::ForagerSchema = serde_json::from_str(&raw)
+            .with_context(|| format!("parsing sidecar {}", path.display()))?;
+        sidecars.push(schema);
+    }
+
+    let bundle = wezel_bench::build_bundle(sidecars);
+    let bundle_path = ws.bundle_schema_path();
+    if let Some(parent) = bundle_path.parent() {
+        std::fs::create_dir_all(parent)
+            .with_context(|| format!("creating {}", parent.display()))?;
+    }
+    let body = serde_json::to_string_pretty(&bundle).context("serialising schema bundle")?;
+    std::fs::write(&bundle_path, body)
+        .with_context(|| format!("writing {}", bundle_path.display()))?;
+    println!("  wrote {}", bundle_path.display());
+    Ok(())
+}
+
+/// True only when the cached sidecar exists and matches the current
+/// [`wezel_types::ForagerSchema`] shape. A stale-format file is treated as
+/// missing so `tool sync` re-fetches it.
+fn sidecar_is_current(ws: &wezel_bench::Workspace, forager: &str) -> bool {
+    let path = ws.schema_path(forager);
+    let Ok(raw) = std::fs::read_to_string(&path) else {
+        return false;
+    };
+    serde_json::from_str::<wezel_types::ForagerSchema>(&raw).is_ok()
 }

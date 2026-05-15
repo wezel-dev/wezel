@@ -55,11 +55,13 @@ impl LintFixture {
             fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
         }
         let schema_path = self.plugin_dir.join(format!("forager-{name}.schema.json"));
-        fs::write(
-            &schema_path,
-            format!(r#"{{"name":"{name}","output":{{}}}}"#),
-        )
-        .unwrap();
+        let sidecar = wezel_types::ForagerSchema {
+            name: name.into(),
+            description: format!("fake {name}"),
+            inputs: serde_json::json!({"type": "object"}),
+            measurements_doc: String::new(),
+        };
+        fs::write(&schema_path, serde_json::to_string(&sidecar).unwrap()).unwrap();
     }
 
     /// Write a minimal lockfile entry for `name` so lint's hard-fail-on-

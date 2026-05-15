@@ -17,7 +17,9 @@ use anyhow::{Context, Result, bail};
 use indexmap::IndexMap;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use wezel_types::{Aggregation, ExperimentDef, ForagerPluginEnvelope, StepDef, SummaryDef};
+use wezel_types::{
+    Aggregation, ExperimentDef, ForagerPluginEnvelope, ForagerSchema, StepDef, SummaryDef,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProjectConfig {
@@ -177,6 +179,87 @@ fn one_usize() -> usize {
 pub fn experiment_schema() -> serde_json::Value {
     let schema = schemars::schema_for!(ExperimentToml);
     serde_json::to_value(schema).expect("schema serialization is infallible")
+}
+
+/// Build `.wezel/schema.json` — the experiment-level schema with one
+/// `if`/`then` branch per installed forager.
+///
+/// The base shape comes from [`experiment_schema`]; for each forager we add a
+/// branch on `$defs/ExperimentStepToml` that activates when `tool == <name>`,
+/// splicing in the forager's flat input properties and overriding the
+/// `description` of `summary.<x>.measurement` with the forager's
+/// `measurements_doc`. Editors keyed off the `tool` discriminator surface
+/// per-forager hints throughout the step.
+pub fn build_bundle<I>(foragers: I) -> serde_json::Value
+where
+    I: IntoIterator<Item = ForagerSchema>,
+{
+    let mut bundle = experiment_schema();
+    let Some(step_def) = bundle
+        .pointer_mut("/definitions/ExperimentStepToml")
+        .and_then(|v| v.as_object_mut())
+    else {
+        // experiment_schema is generated from a stable type; this is a
+        // programming error if it ever fires.
+        panic!("experiment schema missing definitions/ExperimentStepToml");
+    };
+
+    let mut branches = Vec::new();
+    for forager in foragers {
+        branches.push(forager_branch(&forager));
+    }
+
+    if !branches.is_empty() {
+        step_def.insert("allOf".into(), serde_json::Value::Array(branches));
+    }
+    bundle
+}
+
+fn forager_branch(forager: &ForagerSchema) -> serde_json::Value {
+    let mut then_props = serde_json::Map::new();
+
+    // Splice the forager's input properties as flat keys of the step. They
+    // live on the step directly because ExperimentStepToml uses serde(flatten)
+    // for forager inputs.
+    if let Some(input_props) = forager.inputs.get("properties").and_then(|v| v.as_object()) {
+        for (k, v) in input_props {
+            then_props.insert(k.clone(), v.clone());
+        }
+    }
+
+    // Override summary entries' measurement.description with this forager's
+    // documentation. We layer the override on top of the base summary schema
+    // via allOf so the existing `aggregation`/`filter`/etc. constraints are
+    // preserved.
+    then_props.insert(
+        "summary".into(),
+        serde_json::json!({
+            "type": "object",
+            "additionalProperties": {
+                "allOf": [
+                    { "$ref": "#/definitions/EmbeddedSummaryToml" },
+                    {
+                        "properties": {
+                            "measurement": {
+                                "description": forager.measurements_doc,
+                            }
+                        }
+                    }
+                ]
+            }
+        }),
+    );
+
+    let mut then = serde_json::Map::new();
+    then.insert("properties".into(), serde_json::Value::Object(then_props));
+    if let Some(required) = forager.inputs.get("required").cloned() {
+        then.insert("required".into(), required);
+    }
+
+    serde_json::json!({
+        "if": { "properties": { "tool": { "const": forager.name } } },
+        "then": serde_json::Value::Object(then),
+    })
 }
 
 fn bool_true() -> bool {

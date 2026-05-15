@@ -272,11 +272,17 @@ fn write_schema_sidecar(
             out.status
         )));
     }
-    serde_json::from_slice::<serde_json::Value>(&out.stdout).map_err(|e| {
+    let parsed: wezel_types::ForagerSchema = serde_json::from_slice(&out.stdout).map_err(|e| {
         FetchError::Other(anyhow::anyhow!(
-            "forager-{forager_name} --schema produced invalid JSON: {e}"
+            "forager-{forager_name} --schema produced invalid output: {e}"
         ))
     })?;
+    if parsed.name != forager_name {
+        return Err(FetchError::Other(anyhow::anyhow!(
+            "forager-{forager_name} --schema reports name `{}` — binary/schema mismatch",
+            parsed.name,
+        )));
+    }
     let schema_path = workspace.schema_path(forager_name);
     std::fs::write(&schema_path, &out.stdout).map_err(|e| {
         FetchError::Other(anyhow::anyhow!("writing {}: {e}", schema_path.display()))

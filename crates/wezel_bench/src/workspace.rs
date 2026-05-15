@@ -47,6 +47,12 @@ impl Workspace {
             .join(format!("forager-{forager}.schema.json"))
     }
 
+    /// Path to the project-scoped editor schema bundle. Rewritten on every
+    /// `wezel tool sync`; each experiment.toml references it via `#:schema`.
+    pub fn bundle_schema_path(&self) -> PathBuf {
+        self.project_dir.join(".wezel").join("schema.json")
+    }
+
     /// Default plugin store: the directory containing the running wezel
     /// binary. Used by the CLI; tests should pass a tempdir to `discover`
     /// directly.

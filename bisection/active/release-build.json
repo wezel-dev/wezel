@@ -1,0 +1,10 @@
+{
+  "experiment": "release-build",
+  "summary_name": "wezel-binary-size",
+  "good": "da14efee80f7ece6c25957a913f328869caf437f",
+  "bad": "fa11e5ca93964be13786df7202db170e1f3b70a0",
+  "good_value": 8951504.0,
+  "bad_value": 13051432.0,
+  "threshold": 10.0,
+  "started_at": "2026-05-16T08:12:38+0000"
+}

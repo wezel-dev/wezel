@@ -1,0 +1,4631 @@
+{
+  "commit": "fa11e5ca93964be13786df7202db170e1f3b70a0",
+  "timestamp": "2026-05-16T08:11:11+0000",
+  "summaries": {
+    "build-time": 36351.4,
+    "total-llvm-lines": 9218.0,
+    "total-llvm-copies": 324.0
+  },
+  "measurements": [
+    {
+      "step": "baseline",
+      "measurements": [
+        {
+          "name": "time_ms",
+          "value": 36571
+        },
+        {
+          "name": "time_ms",
+          "value": 36254
+        },
+        {
+          "name": "time_ms",
+          "value": 36261
+        },
+        {
+          "name": "time_ms",
+          "value": 36462
+        },
+        {
+          "name": "time_ms",
+          "value": 36209
+        }
+      ]
+    },
+    {
+      "step": "measure-llvm",
+      "measurements": [
+        {
+          "name": "llvm-lines",
+          "value": 9218,
+          "tags": {
+            "summary_unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 324,
+          "tags": {
+            "summary_unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 457,
+          "tags": {
+            "unit": "lines",
+            "function": "<core::iter::adapters::flatten::FlattenCompat<I,U> as core::iter::traits::iterator::Iterator>::size_hint"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<core::iter::adapters::flatten::FlattenCompat<I,U> as core::iter::traits::iterator::Iterator>::size_hint",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 394,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::sort::stable::quicksort::stable_partition"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "function": "core::slice::sort::stable::quicksort::stable_partition",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 339,
+          "tags": {
+            "function": "<core::slice::iter::Iter<T> as core::iter::traits::iterator::Iterator>::fold",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::slice::iter::Iter<T> as core::iter::traits::iterator::Iterator>::fold"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 246,
+          "tags": {
+            "unit": "lines",
+            "function": "core::iter::traits::iterator::Iterator::try_fold"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "copies",
+            "function": "core::iter::traits::iterator::Iterator::try_fold"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 244,
+          "tags": {
+            "function": "core::slice::sort::stable::drift::sort",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::sort::stable::drift::sort",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 229,
+          "tags": {
+            "function": "core::slice::sort::shared::smallsort::small_sort_general_with_scratch",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::sort::shared::smallsort::small_sort_general_with_scratch",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 190,
+          "tags": {
+            "function": "core::iter::adapters::flatten::FlattenCompat<I,U>::iter_try_fold",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::iter::adapters::flatten::FlattenCompat<I,U>::iter_try_fold",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 183,
+          "tags": {
+            "function": "wezel_types::_::<impl schemars::JsonSchema for wezel_types::Aggregation>::json_schema",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "wezel_types::_::<impl schemars::JsonSchema for wezel_types::Aggregation>::json_schema",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 180,
+          "tags": {
+            "function": "core::iter::adapters::filter::filter_try_fold::{{closure}}",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "function": "core::iter::adapters::filter::filter_try_fold::{{closure}}",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 178,
+          "tags": {
+            "function": "core::slice::sort::stable::quicksort::quicksort",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::sort::stable::quicksort::quicksort"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 164,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::sort::shared::smallsort::bidirectional_merge"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::sort::shared::smallsort::bidirectional_merge"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 158,
+          "tags": {
+            "function": "<schemars::schema::SchemaObject as core::default::Default>::default",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<schemars::schema::SchemaObject as core::default::Default>::default",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 157,
+          "tags": {
+            "function": "wezel_types::SummaryDef::compute",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "wezel_types::SummaryDef::compute"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 125,
+          "tags": {
+            "function": "<alloc::vec::Vec<T> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<T,I>>::from_iter",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<alloc::vec::Vec<T> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<T,I>>::from_iter",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 123,
+          "tags": {
+            "function": "core::slice::sort::shared::smallsort::sort4_stable",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::sort::shared::smallsort::sort4_stable",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 121,
+          "tags": {
+            "unit": "lines",
+            "function": "schemars::_private::metadata::add_description"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "schemars::_private::metadata::add_description",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 111,
+          "tags": {
+            "function": "core::slice::sort::shared::find_existing_run",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::sort::shared::find_existing_run",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 105,
+          "tags": {
+            "function": "alloc::vec::Vec<T,A>::extend_desugared",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "alloc::vec::Vec<T,A>::extend_desugared",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 104,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::sort::stable::merge::merge"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::sort::stable::merge::merge"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 101,
+          "tags": {
+            "function": "alloc::alloc::Global::alloc_impl_runtime",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "alloc::alloc::Global::alloc_impl_runtime"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 98,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::sort::stable::merge::MergeState<T>::merge_down"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::sort::stable::merge::MergeState<T>::merge_down"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 96,
+          "tags": {
+            "unit": "lines",
+            "function": "<core::iter::adapters::cloned::Cloned<I> as core::iter::traits::iterator::Iterator>::fold"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::iter::adapters::cloned::Cloned<I> as core::iter::traits::iterator::Iterator>::fold"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 96,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::sort::stable::drift::logical_merge"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::sort::stable::drift::logical_merge",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 93,
+          "tags": {
+            "function": "<core::slice::iter::Iter<T> as core::iter::traits::iterator::Iterator>::next",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::slice::iter::Iter<T> as core::iter::traits::iterator::Iterator>::next"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 93,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::sort::stable::driftsort_main"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::sort::stable::driftsort_main"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 90,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::sort::stable::drift::create_run"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::sort::stable::drift::create_run",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 89,
+          "tags": {
+            "function": "hashbrown::raw::RawTableInner::find_inner",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::raw::RawTableInner::find_inner",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 87,
+          "tags": {
+            "function": "core::slice::sort::shared::smallsort::insert_tail",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::sort::shared::smallsort::insert_tail"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 84,
+          "tags": {
+            "unit": "lines",
+            "function": "<core::iter::adapters::fuse::Fuse<I> as core::iter::adapters::fuse::FuseImpl<I>>::try_fold"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::iter::adapters::fuse::Fuse<I> as core::iter::adapters::fuse::FuseImpl<I>>::try_fold"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 82,
+          "tags": {
+            "function": "<core::slice::iter::Iter<T> as core::iter::traits::iterator::Iterator>::size_hint",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "function": "<core::slice::iter::Iter<T> as core::iter::traits::iterator::Iterator>::size_hint",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 82,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::sort::shared::smallsort::merge_down"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::sort::shared::smallsort::merge_down",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 78,
+          "tags": {
+            "function": "core::slice::sort::shared::pivot::choose_pivot",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::sort::shared::pivot::choose_pivot"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 74,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ptr::swap_nonoverlapping_bytes::swap_nonoverlapping_short"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::ptr::swap_nonoverlapping_bytes::swap_nonoverlapping_short"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 72,
+          "tags": {
+            "function": "core::slice::iter::Iter<T>::new",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "function": "core::slice::iter::Iter<T>::new",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 70,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::sort::stable::merge::MergeState<T>::merge_up"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::sort::stable::merge::MergeState<T>::merge_up",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 63,
+          "tags": {
+            "unit": "lines",
+            "function": "core::fmt::Arguments::as_statically_known_str"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::fmt::Arguments::as_statically_known_str"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 63,
+          "tags": {
+            "function": "core::ptr::swap_nonoverlapping::precondition_check",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::swap_nonoverlapping::precondition_check",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 63,
+          "tags": {
+            "function": "core::slice::sort::stable::quicksort::PartitionState<T>::partition_one",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::sort::stable::quicksort::PartitionState<T>::partition_one"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 61,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ptr::copy_nonoverlapping::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::copy_nonoverlapping::precondition_check",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 61,
+          "tags": {
+            "function": "core::slice::<impl [T]>::reverse::revswap",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::<impl [T]>::reverse::revswap"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 60,
+          "tags": {
+            "unit": "lines",
+            "function": "wezel_types::SummaryDef::compute::{{closure}}"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "copies",
+            "function": "wezel_types::SummaryDef::compute::{{closure}}"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 60,
+          "tags": {
+            "function": "core::iter::adapters::map::map_fold::{{closure}}",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "function": "core::iter::adapters::map::map_fold::{{closure}}",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 60,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::sort::shared::smallsort::merge_up"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::sort::shared::smallsort::merge_up"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 58,
+          "tags": {
+            "unit": "lines",
+            "function": "core::option::Option<T>::map"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "function": "core::option::Option<T>::map",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 56,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::sort::shared::pivot::median3_rec"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::sort::shared::pivot::median3_rec"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 55,
+          "tags": {
+            "function": "<core::iter::adapters::filter::Filter<I,P> as core::iter::traits::iterator::Iterator>::size_hint",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::iter::adapters::filter::Filter<I,P> as core::iter::traits::iterator::Iterator>::size_hint"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 55,
+          "tags": {
+            "function": "core::hint::select_unpredictable",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::hint::select_unpredictable",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 52,
+          "tags": {
+            "function": "<core::iter::adapters::filter::Filter<I,P> as core::iter::traits::iterator::Iterator>::try_fold",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "function": "<core::iter::adapters::filter::Filter<I,P> as core::iter::traits::iterator::Iterator>::try_fold",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 52,
+          "tags": {
+            "function": "core::fmt::Formatter::write_fmt",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::fmt::Formatter::write_fmt"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 47,
+          "tags": {
+            "function": "core::ptr::swap_nonoverlapping_bytes",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::swap_nonoverlapping_bytes",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 47,
+          "tags": {
+            "function": "hashbrown::raw::RawTable<T,A>::find",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::raw::RawTable<T,A>::find",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 45,
+          "tags": {
+            "function": "<hashbrown::control::bitmask::BitMaskIter as core::iter::traits::iterator::Iterator>::next",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<hashbrown::control::bitmask::BitMaskIter as core::iter::traits::iterator::Iterator>::next",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 45,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ub_checks::maybe_is_nonoverlapping::runtime"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ub_checks::maybe_is_nonoverlapping::runtime",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 42,
+          "tags": {
+            "function": "<core::slice::sort::stable::merge::MergeState<T> as core::ops::drop::Drop>::drop",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::slice::sort::stable::merge::MergeState<T> as core::ops::drop::Drop>::drop"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 42,
+          "tags": {
+            "function": "alloc::boxed::box_assume_init_into_vec_unsafe",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "alloc::boxed::box_assume_init_into_vec_unsafe",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 42,
+          "tags": {
+            "function": "core::slice::raw::from_raw_parts::precondition_check",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::raw::from_raw_parts::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 42,
+          "tags": {
+            "function": "core::slice::raw::from_raw_parts_mut::precondition_check",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::raw::from_raw_parts_mut::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 41,
+          "tags": {
+            "function": "alloc::slice::stable_sort",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "alloc::slice::stable_sort"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 41,
+          "tags": {
+            "unit": "lines",
+            "function": "indexmap::map::IndexMap<K,V,S>::get_index_of"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "indexmap::map::IndexMap<K,V,S>::get_index_of"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 40,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::find_map",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::find_map",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 40,
+          "tags": {
+            "function": "core::option::Option<T>::insert",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::option::Option<T>::insert",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 39,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ops::function::FnOnce::call_once"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "function": "core::ops::function::FnOnce::call_once",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 39,
+          "tags": {
+            "function": "core::iter::adapters::flatten::FlattenCompat<I,U>::iter_try_fold::flatten::{{closure}}",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::iter::adapters::flatten::FlattenCompat<I,U>::iter_try_fold::flatten::{{closure}}",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 39,
+          "tags": {
+            "function": "core::option::Option<T>::map_or",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::option::Option<T>::map_or"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 39,
+          "tags": {
+            "function": "core::slice::sort::stable::drift::stable_quicksort",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::sort::stable::drift::stable_quicksort",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 39,
+          "tags": {
+            "function": "indexmap::map::IndexMap<K,V,S>::get",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "indexmap::map::IndexMap<K,V,S>::get",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 38,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ptr::swap_nonoverlapping"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::swap_nonoverlapping",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 38,
+          "tags": {
+            "function": "core::str::traits::<impl core::cmp::PartialEq for str>::eq",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::str::traits::<impl core::cmp::PartialEq for str>::eq",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 37,
+          "tags": {
+            "function": "<alloc::boxed::Box<T,A> as core::ops::drop::Drop>::drop",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<alloc::boxed::Box<T,A> as core::ops::drop::Drop>::drop",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 37,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::<impl [T]>::reverse"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::<impl [T]>::reverse",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 37,
+          "tags": {
+            "function": "core::slice::sort::shared::smallsort::insertion_sort_shift_left",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::sort::shared::smallsort::insertion_sort_shift_left",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 36,
+          "tags": {
+            "unit": "lines",
+            "function": "alloc::boxed::box_new_uninit"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "alloc::boxed::box_new_uninit",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 35,
+          "tags": {
+            "unit": "lines",
+            "function": "alloc::slice::<impl core::slice::sort::stable::BufGuard<T> for alloc::vec::Vec<T>>::as_uninit_slice_mut"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "alloc::slice::<impl core::slice::sort::stable::BufGuard<T> for alloc::vec::Vec<T>>::as_uninit_slice_mut"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 35,
+          "tags": {
+            "function": "core::iter::adapters::map::map_try_fold::{{closure}}",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::iter::adapters::map::map_try_fold::{{closure}}"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 35,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::find_map::check::{{closure}}",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::find_map::check::{{closure}}",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 35,
+          "tags": {
+            "function": "hashbrown::raw::ProbeSeq::move_next",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "hashbrown::raw::ProbeSeq::move_next"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 34,
+          "tags": {
+            "function": "core::slice::sort::shared::pivot::median3",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::sort::shared::pivot::median3"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 33,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::<impl [T]>::split_at_mut_unchecked"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::<impl [T]>::split_at_mut_unchecked"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 32,
+          "tags": {
+            "function": "alloc::vec::Vec<T,A>::reserve",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "alloc::vec::Vec<T,A>::reserve"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 30,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::<impl [T]>::iter"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "function": "core::slice::<impl [T]>::iter",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 30,
+          "tags": {
+            "function": "core::intrinsics::select_unpredictable",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "unit": "copies",
+            "function": "core::intrinsics::select_unpredictable"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 30,
+          "tags": {
+            "function": "<&alloc::vec::Vec<T,A> as core::iter::traits::collect::IntoIterator>::into_iter",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<&alloc::vec::Vec<T,A> as core::iter::traits::collect::IntoIterator>::into_iter"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 29,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ops::function::FnMut::call_mut"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "copies",
+            "function": "core::ops::function::FnMut::call_mut"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 29,
+          "tags": {
+            "function": "wezel_types::SummaryDef::compute::{{closure}}::{{closure}}",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "wezel_types::SummaryDef::compute::{{closure}}::{{closure}}"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 28,
+          "tags": {
+            "function": "<core::ops::control_flow::ControlFlow<B,C> as core::ops::try_trait::Try>::branch",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::ops::control_flow::ControlFlow<B,C> as core::ops::try_trait::Try>::branch"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 28,
+          "tags": {
+            "function": "hashbrown::control::bitmask::BitMask::lowest_set_bit",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "hashbrown::control::bitmask::BitMask::lowest_set_bit"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 27,
+          "tags": {
+            "unit": "lines",
+            "function": "hashbrown::raw::RawTable<T,A>::get"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "hashbrown::raw::RawTable<T,A>::get"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 27,
+          "tags": {
+            "unit": "lines",
+            "function": "wezel_types::PheromoneOutput::detect_platform"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "wezel_types::PheromoneOutput::detect_platform",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 26,
+          "tags": {
+            "function": "core::option::Option<&T>::copied",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::option::Option<&T>::copied",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 25,
+          "tags": {
+            "unit": "lines",
+            "function": "hashbrown::raw::RawTable<T,A>::bucket"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "hashbrown::raw::RawTable<T,A>::bucket"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 24,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::filter",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "copies",
+            "function": "core::iter::traits::iterator::Iterator::filter"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 24,
+          "tags": {
+            "function": "core::ops::function::impls::<impl core::ops::function::FnMut<A> for &mut F>::call_mut",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "unit": "copies",
+            "function": "core::ops::function::impls::<impl core::ops::function::FnMut<A> for &mut F>::call_mut"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 24,
+          "tags": {
+            "function": "core::core_arch::x86::sse2::_mm_movemask_epi8",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::core_arch::x86::sse2::_mm_movemask_epi8",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 24,
+          "tags": {
+            "function": "hashbrown::control::tag::Tag::full",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::control::tag::Tag::full",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 23,
+          "tags": {
+            "function": "core::num::<impl usize>::is_multiple_of",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::num::<impl usize>::is_multiple_of",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 23,
+          "tags": {
+            "function": "core::ptr::drop_in_place<alloc::vec::Vec<f64>>",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::drop_in_place<alloc::vec::Vec<f64>>",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 23,
+          "tags": {
+            "function": "indexmap::inner::equivalent::{{closure}}",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "indexmap::inner::equivalent::{{closure}}",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 22,
+          "tags": {
+            "function": "<core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::try_fold",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::try_fold"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 22,
+          "tags": {
+            "function": "core::cmp::impls::<impl core::cmp::PartialOrd for f64>::partial_cmp",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::cmp::impls::<impl core::cmp::PartialOrd for f64>::partial_cmp",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 22,
+          "tags": {
+            "unit": "lines",
+            "function": "core::slice::sort::shared::smallsort::sort8_stable"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::sort::shared::smallsort::sort8_stable",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 22,
+          "tags": {
+            "unit": "lines",
+            "function": "indexmap::inner::Core<K,V>::get_index_of"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "indexmap::inner::Core<K,V>::get_index_of"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 21,
+          "tags": {
+            "unit": "lines",
+            "function": "alloc::slice::<impl [T]>::sort_by"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "alloc::slice::<impl [T]>::sort_by"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 20,
+          "tags": {
+            "function": "core::slice::<impl [T]>::split_at_mut",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::<impl [T]>::split_at_mut",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 20,
+          "tags": {
+            "function": "hashbrown::control::group::sse2::Group::match_tag",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "hashbrown::control::group::sse2::Group::match_tag"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 19,
+          "tags": {
+            "unit": "lines",
+            "function": "<core::slice::sort::shared::smallsort::CopyOnDrop<T> as core::ops::drop::Drop>::drop"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::slice::sort::shared::smallsort::CopyOnDrop<T> as core::ops::drop::Drop>::drop"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 19,
+          "tags": {
+            "function": "core::bool::<impl bool>::then_some",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::bool::<impl bool>::then_some",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 19,
+          "tags": {
+            "function": "core::core_arch::x86::sse2::_mm_cmpeq_epi8",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::core_arch::x86::sse2::_mm_cmpeq_epi8",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 19,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::flat_map",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::flat_map",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 18,
+          "tags": {
+            "unit": "lines",
+            "function": "<alloc::vec::Vec<T,A> as core::ops::deref::Deref>::deref"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "function": "<alloc::vec::Vec<T,A> as core::ops::deref::Deref>::deref",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 18,
+          "tags": {
+            "unit": "lines",
+            "function": "<core::iter::adapters::filter_map::FilterMap<I,F> as core::iter::traits::iterator::Iterator>::size_hint"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::iter::adapters::filter_map::FilterMap<I,F> as core::iter::traits::iterator::Iterator>::size_hint"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 18,
+          "tags": {
+            "function": "<wezel_types::SummaryError as core::fmt::Display>::fmt",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::SummaryError as core::fmt::Display>::fmt",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 18,
+          "tags": {
+            "unit": "lines",
+            "function": "core::option::Option<T>::unwrap_or"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::option::Option<T>::unwrap_or",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 18,
+          "tags": {
+            "function": "core::slice::sort::stable::AlignedStorage<T,_>::as_uninit_slice_mut",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::sort::stable::AlignedStorage<T,_>::as_uninit_slice_mut",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 17,
+          "tags": {
+            "unit": "lines",
+            "function": "<core::ops::range::Range<usize> as core::slice::index::SliceIndex<[T]>>::get_unchecked_mut::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::ops::range::Range<usize> as core::slice::index::SliceIndex<[T]>>::get_unchecked_mut::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 17,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::all::check::{{closure}}",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::all::check::{{closure}}",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 17,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ptr::drop_in_place<alloc::boxed::Box<core::mem::maybe_uninit::MaybeUninit<[serde_json::value::Value; 5]>>>"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::drop_in_place<alloc::boxed::Box<core::mem::maybe_uninit::MaybeUninit<[serde_json::value::Value; 5]>>>",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 16,
+          "tags": {
+            "function": "core::ptr::alignment::Alignment::new_unchecked::precondition_check",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::alignment::Alignment::new_unchecked::precondition_check",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 15,
+          "tags": {
+            "function": "<alloc::alloc::Global as core::alloc::Allocator>::deallocate",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<alloc::alloc::Global as core::alloc::Allocator>::deallocate",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 15,
+          "tags": {
+            "unit": "lines",
+            "function": "hashbrown::raw::Bucket<T>::from_base_index"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::raw::Bucket<T>::from_base_index",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 15,
+          "tags": {
+            "unit": "lines",
+            "function": "hashbrown::raw::RawTableInner::num_ctrl_bytes"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::raw::RawTableInner::num_ctrl_bytes",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 14,
+          "tags": {
+            "function": "<alloc::vec::Vec<T,A> as core::ops::index::Index<I>>::index",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<alloc::vec::Vec<T,A> as core::ops::index::Index<I>>::index",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 14,
+          "tags": {
+            "function": "core::alloc::layout::Layout::from_size_alignment_unchecked::precondition_check",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::alloc::layout::Layout::from_size_alignment_unchecked::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 14,
+          "tags": {
+            "unit": "lines",
+            "function": "core::num::<impl usize>::unchecked_add::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::num::<impl usize>::unchecked_add::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 14,
+          "tags": {
+            "function": "hashbrown::raw::RawTableInner::ctrl",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "hashbrown::raw::RawTableInner::ctrl"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 13,
+          "tags": {
+            "unit": "lines",
+            "function": "<alloc::string::String as core::convert::From<&str>>::from"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<alloc::string::String as core::convert::From<&str>>::from",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 13,
+          "tags": {
+            "function": "<usize as core::slice::index::SliceIndex<[T]>>::get_unchecked::precondition_check",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<usize as core::slice::index::SliceIndex<[T]>>::get_unchecked::precondition_check",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 13,
+          "tags": {
+            "function": "alloc::slice::<impl core::slice::sort::stable::BufGuard<T> for alloc::vec::Vec<T>>::with_capacity",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "alloc::slice::<impl core::slice::sort::stable::BufGuard<T> for alloc::vec::Vec<T>>::with_capacity"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 13,
+          "tags": {
+            "unit": "lines",
+            "function": "alloc::str::<impl alloc::borrow::ToOwned for str>::to_owned"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "alloc::str::<impl alloc::borrow::ToOwned for str>::to_owned",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 13,
+          "tags": {
+            "unit": "lines",
+            "function": "alloc::vec::Vec<T,A>::from_raw_parts_in::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "alloc::vec::Vec<T,A>::from_raw_parts_in::precondition_check",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 13,
+          "tags": {
+            "function": "alloc::vec::Vec<T,A>::set_len::precondition_check",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "alloc::vec::Vec<T,A>::set_len::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 13,
+          "tags": {
+            "function": "core::ptr::const_ptr::<impl *const T>::offset_from_unsigned::precondition_check",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::const_ptr::<impl *const T>::offset_from_unsigned::precondition_check",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 13,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ptr::mut_ptr::<impl *mut T>::sub"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::mut_ptr::<impl *mut T>::sub",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 13,
+          "tags": {
+            "function": "core::slice::<impl [T]>::split_at_mut_unchecked::precondition_check",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::slice::<impl [T]>::split_at_mut_unchecked::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 13,
+          "tags": {
+            "function": "hashbrown::raw::Bucket<T>::as_ptr",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::raw::Bucket<T>::as_ptr",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 13,
+          "tags": {
+            "function": "hashbrown::raw::RawTable<T,A>::find::{{closure}}",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::raw::RawTable<T,A>::find::{{closure}}",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 13,
+          "tags": {
+            "function": "hashbrown::util::likely",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::util::likely",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 12,
+          "tags": {
+            "function": "<T as core::slice::sort::shared::smallsort::StableSmallSortTypeImpl>::small_sort",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<T as core::slice::sort::shared::smallsort::StableSmallSortTypeImpl>::small_sort",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 12,
+          "tags": {
+            "function": "<usize as core::slice::index::SliceIndex<[T]>>::index",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<usize as core::slice::index::SliceIndex<[T]>>::index"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 12,
+          "tags": {
+            "unit": "lines",
+            "function": "alloc::slice::<impl [T]>::sort_by::{{closure}}"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "alloc::slice::<impl [T]>::sort_by::{{closure}}"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 12,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ptr::copy_nonoverlapping"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::copy_nonoverlapping",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 12,
+          "tags": {
+            "function": "core::ptr::non_null::NonNull<T>::new_unchecked::precondition_check",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::non_null::NonNull<T>::new_unchecked::precondition_check",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 12,
+          "tags": {
+            "unit": "lines",
+            "function": "indexmap::inner::equivalent"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "indexmap::inner::equivalent",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 11,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::map",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::map",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 11,
+          "tags": {
+            "function": "<alloc::vec::Vec<T,A> as core::ops::drop::Drop>::drop",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<alloc::vec::Vec<T,A> as core::ops::drop::Drop>::drop",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 11,
+          "tags": {
+            "function": "<core::iter::adapters::flatten::FlattenCompat<I,U> as core::iter::traits::iterator::Iterator>::try_fold",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::iter::adapters::flatten::FlattenCompat<I,U> as core::iter::traits::iterator::Iterator>::try_fold"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 11,
+          "tags": {
+            "function": "<core::iter::adapters::flatten::FlattenCompat<I,U> as core::iter::traits::iterator::Iterator>::try_fold::flatten::{{closure}}",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::iter::adapters::flatten::FlattenCompat<I,U> as core::iter::traits::iterator::Iterator>::try_fold::flatten::{{closure}}"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 11,
+          "tags": {
+            "unit": "lines",
+            "function": "core::hint::assert_unchecked::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::hint::assert_unchecked::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 11,
+          "tags": {
+            "function": "hashbrown::raw::RawTableInner::probe_seq",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::raw::RawTableInner::probe_seq",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 11,
+          "tags": {
+            "unit": "lines",
+            "function": "indexmap::map::IndexMap<K,V,S>::iter"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "indexmap::map::IndexMap<K,V,S>::iter",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 10,
+          "tags": {
+            "function": "core::fmt::Arguments::from_str",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::fmt::Arguments::from_str"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 10,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::all",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::all",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 10,
+          "tags": {
+            "function": "core::ops::function::FnOnce::call_once{{vtable.shim}}",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::ops::function::FnOnce::call_once{{vtable.shim}}"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 10,
+          "tags": {
+            "function": "core::slice::sort::stable::quicksort::quicksort::{{closure}}",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::slice::sort::stable::quicksort::quicksort::{{closure}}",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 10,
+          "tags": {
+            "function": "hashbrown::raw::RawTable<T,A>::num_buckets",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::raw::RawTable<T,A>::num_buckets",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 10,
+          "tags": {
+            "function": "indexmap::map::iter::Iter<K,V>::new",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "indexmap::map::iter::Iter<K,V>::new"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "function": "<alloc::vec::Vec<T,A> as core::ops::deref::DerefMut>::deref_mut",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<alloc::vec::Vec<T,A> as core::ops::deref::DerefMut>::deref_mut",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "unit": "lines",
+            "function": "<core::iter::adapters::filter_map::FilterMap<I,F> as core::iter::traits::iterator::Iterator>::next"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<core::iter::adapters::filter_map::FilterMap<I,F> as core::iter::traits::iterator::Iterator>::next",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "function": "<core::iter::adapters::flatten::FlatMap<I,U,F> as core::iter::traits::iterator::Iterator>::try_fold",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::iter::adapters::flatten::FlatMap<I,U,F> as core::iter::traits::iterator::Iterator>::try_fold"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "unit": "lines",
+            "function": "<f64 as core::iter::traits::accum::Sum<&f64>>::sum::{{closure}}"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<f64 as core::iter::traits::accum::Sum<&f64>>::sum::{{closure}}"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "unit": "lines",
+            "function": "<indexmap::map::iter::Iter<K,V> as core::iter::traits::iterator::Iterator>::next"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<indexmap::map::iter::Iter<K,V> as core::iter::traits::iterator::Iterator>::next",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "function": "alloc::string::String::as_str",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "alloc::string::String::as_str",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "unit": "lines",
+            "function": "core::core_arch::x86::sse2::_mm_loadu_si128"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::core_arch::x86::sse2::_mm_loadu_si128",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "function": "core::core_arch::x86::sse2::_mm_set1_epi8",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::core_arch::x86::sse2::_mm_set1_epi8"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "function": "core::f64::<impl f64>::max",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::f64::<impl f64>::max",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "function": "core::f64::<impl f64>::min",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::f64::<impl f64>::min",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "function": "core::intrinsics::typed_swap_nonoverlapping",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::intrinsics::typed_swap_nonoverlapping"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "unit": "lines",
+            "function": "hashbrown::control::bitmask::BitMask::remove_lowest_bit"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "hashbrown::control::bitmask::BitMask::remove_lowest_bit"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "function": "indexmap::map::IndexMap<K,V,S>::hash",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "indexmap::map::IndexMap<K,V,S>::hash",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 9,
+          "tags": {
+            "function": "wezel_types::SummaryDef::compute::{{closure}}::{{closure}}::{{closure}}",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "wezel_types::SummaryDef::compute::{{closure}}::{{closure}}::{{closure}}"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 8,
+          "tags": {
+            "unit": "lines",
+            "function": "<T as core::convert::Into<U>>::into"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "function": "<T as core::convert::Into<U>>::into",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 8,
+          "tags": {
+            "unit": "lines",
+            "function": "<alloc::string::String as core::default::Default>::default"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<alloc::string::String as core::default::Default>::default"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 8,
+          "tags": {
+            "unit": "lines",
+            "function": "core::num::nonzero::NonZero<u16>::trailing_zeros"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::num::nonzero::NonZero<u16>::trailing_zeros",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 8,
+          "tags": {
+            "function": "hashbrown::control::group::sse2::Group::load",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::control::group::sse2::Group::load",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 8,
+          "tags": {
+            "function": "hashbrown::table::HashTable<T,A>::find",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "hashbrown::table::HashTable<T,A>::find"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 8,
+          "tags": {
+            "function": "indexmap::inner::Core<K,V>::as_entries",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "indexmap::inner::Core<K,V>::as_entries",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 8,
+          "tags": {
+            "function": "indexmap::map::IndexMap<K,V,S>::as_entries",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "indexmap::map::IndexMap<K,V,S>::as_entries",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 7,
+          "tags": {
+            "unit": "lines",
+            "function": "<Q as equivalent::Equivalent<K>>::equivalent"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<Q as equivalent::Equivalent<K>>::equivalent",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 7,
+          "tags": {
+            "unit": "lines",
+            "function": "alloc::vec::Vec<T,A>::is_empty"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "alloc::vec::Vec<T,A>::is_empty",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 7,
+          "tags": {
+            "function": "core::fmt::Arguments::new",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::fmt::Arguments::new",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 7,
+          "tags": {
+            "unit": "lines",
+            "function": "core::iter::traits::iterator::Iterator::cloned"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::cloned",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ptr::non_null::NonNull<T>::as_ptr"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "function": "core::ptr::non_null::NonNull<T>::as_ptr",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<alloc::string::String as core::cmp::PartialEq>::eq"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<alloc::string::String as core::cmp::PartialEq>::eq",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<core::hint::select_unpredictable::DropOnPanic<T> as core::ops::drop::Drop>::drop"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<core::hint::select_unpredictable::DropOnPanic<T> as core::ops::drop::Drop>::drop",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<f64 as core::iter::traits::accum::Sum<&f64>>::sum",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<f64 as core::iter::traits::accum::Sum<&f64>>::sum",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Aggregation>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Aggregation>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Aggregation>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Aggregation>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Bisection>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Bisection>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Bisection>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Bisection>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::BisectionStatus>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::BisectionStatus>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::BisectionStatus>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::BisectionStatus>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::BuildEvent>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::BuildEvent>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::BuildEvent>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::BuildEvent>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::CommitStatus>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::CommitStatus>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::CommitStatus>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::CommitStatus>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::CrateTopo>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::CrateTopo>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::CrateTopo>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::CrateTopo>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ExperimentPrRequest>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ExperimentPrRequest>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ExperimentPrRequest>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ExperimentPrRequest>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ExperimentPrResponse>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ExperimentPrResponse>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ExperimentPrResponse>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ExperimentPrResponse>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerCommit>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerCommit>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerCommit>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerCommit>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerJob>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerJob>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerJob>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerJob>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerPluginEnvelope>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerPluginEnvelope>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerPluginEnvelope>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerPluginEnvelope>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerPluginOutput>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerPluginOutput>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerPluginOutput>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerPluginOutput>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerRunReport>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerRunReport>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerRunReport>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerRunReport>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerSchema>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerSchema>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerSchema>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerSchema>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerStepReport>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerStepReport>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerStepReport>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::ForagerStepReport>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Measurement>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Measurement>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Measurement>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Measurement>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::MeasurementStatus>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::MeasurementStatus>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::MeasurementStatus>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::MeasurementStatus>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Observation>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Observation>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Observation>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Observation>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::PheromoneField>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::PheromoneField>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::PheromoneField>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::PheromoneField>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::PheromoneInfo>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::PheromoneInfo>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::PheromoneInfo>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::PheromoneInfo>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::PheromoneOutput>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::PheromoneOutput>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::PheromoneOutput>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::PheromoneOutput>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Profile>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Profile>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Profile>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Profile>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Project>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Project>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Project>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Project>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Run>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Run>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Run>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::Run>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::SummaryDef>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::SummaryDef>::deserialize::__FieldVisitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::SummaryDef>::deserialize::__Visitor as serde_core::de::Visitor>::expecting"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::_::<impl serde_core::de::Deserialize for wezel_types::SummaryDef>::deserialize::__Visitor as serde_core::de::Visitor>::expecting",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "alloc::vec::Vec<T,A>::len"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "alloc::vec::Vec<T,A>::len",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "core::hint::unreachable_unchecked::precondition_check"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::hint::unreachable_unchecked::precondition_check",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::sum",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::iter::traits::iterator::Iterator::sum"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ptr::mut_ptr::<impl *mut T>::add"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::ptr::mut_ptr::<impl *mut T>::add"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "core::ptr::non_null::NonNull<T>::new_unchecked",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::non_null::NonNull<T>::new_unchecked",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "function": "hashbrown::control::bitmask::BitMask::nonzero_trailing_zeros",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::control::bitmask::BitMask::nonzero_trailing_zeros",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "indexmap::Bucket<K,V>::refs"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "indexmap::Bucket<K,V>::refs",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 6,
+          "tags": {
+            "unit": "lines",
+            "function": "wezel_types::_::<impl schemars::JsonSchema for wezel_types::Aggregation>::schema_id"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "wezel_types::_::<impl schemars::JsonSchema for wezel_types::Aggregation>::schema_id",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 5,
+          "tags": {
+            "unit": "lines",
+            "function": "<T as core::iter::adapters::flatten::ConstSizeIntoIterator>::size"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<T as core::iter::adapters::flatten::ConstSizeIntoIterator>::size"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 5,
+          "tags": {
+            "unit": "lines",
+            "function": "hashbrown::control::group::sse2::Group::match_empty"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::control::group::sse2::Group::match_empty",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 5,
+          "tags": {
+            "unit": "lines",
+            "function": "hashbrown::raw::RawTable<T,A>::data_end"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::raw::RawTable<T,A>::data_end",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "function": "<alloc::raw_vec::RawVec<T,A> as core::ops::drop::Drop>::drop",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<alloc::raw_vec::RawVec<T,A> as core::ops::drop::Drop>::drop"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "function": "<alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<T,I>>::spec_extend",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<T,I>>::spec_extend"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "function": "<alloc::vec::Vec<T> as core::iter::traits::collect::FromIterator<T>>::from_iter",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<alloc::vec::Vec<T> as core::iter::traits::collect::FromIterator<T>>::from_iter",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "function": "<core::iter::adapters::flatten::FlatMap<I,U,F> as core::iter::traits::iterator::Iterator>::size_hint",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::iter::adapters::flatten::FlatMap<I,U,F> as core::iter::traits::iterator::Iterator>::size_hint"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "function": "<core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::size_hint",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::size_hint"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "function": "<core::ops::control_flow::ControlFlow<B,C> as core::ops::try_trait::FromResidual<core::ops::control_flow::ControlFlow<B,core::convert::Infallible>>>::from_residual",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::ops::control_flow::ControlFlow<B,C> as core::ops::try_trait::FromResidual<core::ops::control_flow::ControlFlow<B,core::convert::Infallible>>>::from_residual"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "function": "<f64 as core[c1f1a4ba060b9bfa]::clone::Clone>::clone",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<f64 as core[c1f1a4ba060b9bfa]::clone::Clone>::clone",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "function": "<hashbrown::control::bitmask::BitMask as core::iter::traits::collect::IntoIterator>::into_iter",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<hashbrown::control::bitmask::BitMask as core::iter::traits::collect::IntoIterator>::into_iter",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "function": "core::ptr::drop_in_place<alloc::raw_vec::RawVec<f64>>",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::ptr::drop_in_place<alloc::raw_vec::RawVec<f64>>"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "function": "core::ptr::drop_in_place<core::hint::select_unpredictable::DropOnPanic<*const f64>>",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::drop_in_place<core::hint::select_unpredictable::DropOnPanic<*const f64>>",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ptr::drop_in_place<core::slice::sort::shared::smallsort::CopyOnDrop<f64>>"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::drop_in_place<core::slice::sort::shared::smallsort::CopyOnDrop<f64>>",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "function": "core::ptr::drop_in_place<core::slice::sort::stable::merge::MergeState<f64>>",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::ptr::drop_in_place<core::slice::sort::stable::merge::MergeState<f64>>"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "function": "hashbrown::control::bitmask::BitMask::any_bit_set",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::control::bitmask::BitMask::any_bit_set",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 4,
+          "tags": {
+            "function": "hashbrown::raw::Bucket<T>::as_ref",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::raw::Bucket<T>::as_ref",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "function": "<wezel_types::Aggregation as core::cmp::Eq>::assert_fields_are_eq",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::Aggregation as core::cmp::Eq>::assert_fields_are_eq",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::BisectionStatus as core::cmp::Eq>::assert_fields_are_eq"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::BisectionStatus as core::cmp::Eq>::assert_fields_are_eq",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "function": "<wezel_types::CommitStatus as core::cmp::Eq>::assert_fields_are_eq",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<wezel_types::CommitStatus as core::cmp::Eq>::assert_fields_are_eq",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "lines",
+            "function": "<wezel_types::MeasurementStatus as core::cmp::Eq>::assert_fields_are_eq"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::MeasurementStatus as core::cmp::Eq>::assert_fields_are_eq"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "function": "<wezel_types::Profile as core::cmp::Eq>::assert_fields_are_eq",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<wezel_types::Profile as core::cmp::Eq>::assert_fields_are_eq"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "lines",
+            "function": "core::core_arch::x86::<impl core::core_arch::simd::Simd<i8,16_usize>>::as_m128i"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::core_arch::x86::<impl core::core_arch::simd::Simd<i8,16_usize>>::as_m128i"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "lines",
+            "function": "core::core_arch::x86::__m128i::as_i8x16"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::core_arch::x86::__m128i::as_i8x16",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::filter_map",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::iter::traits::iterator::Iterator::filter_map"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ptr::const_ptr::<impl *const T>::cast"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::ptr::const_ptr::<impl *const T>::cast"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ptr::mut_ptr::<impl *mut T>::cast"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::mut_ptr::<impl *mut T>::cast",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "lines",
+            "function": "core::ptr::non_null::NonNull<T>::cast"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::ptr::non_null::NonNull<T>::cast",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "function": "hashbrown::raw::h1",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "hashbrown::raw::h1"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 3,
+          "tags": {
+            "unit": "lines",
+            "function": "indexmap::HashValue::get"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "indexmap::HashValue::get",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "function": "<I as core::iter::traits::collect::IntoIterator>::into_iter",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<I as core::iter::traits::collect::IntoIterator>::into_iter",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "unit": "lines",
+            "function": "<alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "function": "<core::ops::control_flow::ControlFlow<B,C> as core::ops::try_trait::Try>::from_output",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<core::ops::control_flow::ControlFlow<B,C> as core::ops::try_trait::Try>::from_output"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "function": "<core::option::Option<T> as core::convert::From<T>>::from",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<core::option::Option<T> as core::convert::From<T>>::from",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "unit": "lines",
+            "function": "alloc::boxed::Box<T>::new_uninit"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "alloc::boxed::Box<T>::new_uninit",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "unit": "lines",
+            "function": "core::iter::traits::iterator::Iterator::collect"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::iter::traits::iterator::Iterator::collect",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 2,
+          "tags": {
+            "function": "wezel_types::_::<impl schemars::JsonSchema for wezel_types::Aggregation>::schema_name",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "wezel_types::_::<impl schemars::JsonSchema for wezel_types::Aggregation>::schema_name",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "lines",
+            "function": "<T as core::slice::sort::shared::smallsort::StableSmallSortTypeImpl>::small_sort_threshold"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<T as core::slice::sort::shared::smallsort::StableSmallSortTypeImpl>::small_sort_threshold",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "<T as core::slice::sort::stable::quicksort::IsFreeze>::is_freeze",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "<T as core::slice::sort::stable::quicksort::IsFreeze>::is_freeze"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "lines",
+            "function": "core::intrinsics::cold_path"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "core::intrinsics::cold_path"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::mem::size_of",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "core::mem::size_of",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "hashbrown::util::cold_path",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "hashbrown::util::cold_path"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "wezel_types::bool_true",
+            "unit": "lines"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "function": "wezel_types::bool_true",
+            "unit": "copies"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "lines",
+            "function": "wezel_types::one"
+          }
+        },
+        {
+          "name": "llvm-lines",
+          "value": 1,
+          "tags": {
+            "unit": "copies",
+            "function": "wezel_types::one"
+          }
+        }
+      ]
+    }
+  ]
+}

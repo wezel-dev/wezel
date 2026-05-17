@@ -245,7 +245,10 @@ where
             "additionalProperties".into(),
             serde_json::Value::Bool(false),
         );
-        step.insert("properties".into(), serde_json::Value::Object(step_properties));
+        step.insert(
+            "properties".into(),
+            serde_json::Value::Object(step_properties),
+        );
     }
 
     // StepBody has been inlined into every Step_<tool>; nobody references the

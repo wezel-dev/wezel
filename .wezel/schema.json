@@ -122,7 +122,8 @@
               {
                 "properties": {
                   "outcome": {
-                    "description": "**`time_ms`** — how long `cargo <command>` took, in milliseconds."
+                    "description": "**`time_ms`** — how long `cargo <command>` took, in milliseconds.",
+                    "type": "string"
                   }
                 }
               }
@@ -187,7 +188,8 @@
               {
                 "properties": {
                   "outcome": {
-                    "description": "This forager emits no outcomes."
+                    "description": "This forager emits no outcomes.",
+                    "type": "string"
                   }
                 }
               }
@@ -236,7 +238,8 @@
               {
                 "properties": {
                   "outcome": {
-                    "description": "One outcome per matched file. The outcome name is the file's path (relative to cwd); the value is its size in bytes."
+                    "description": "One outcome per matched file. The outcome name is the file's path (relative to cwd); the value is its size in bytes.",
+                    "type": "string"
                   }
                 }
               }
@@ -288,7 +291,8 @@
               {
                 "properties": {
                   "outcome": {
-                    "description": "**`llvm-lines`** — count of LLVM IR lines (or monomorphisation copies) for a function (u64). Filter tags:\n- `summary_unit = \"lines\"` or `\"copies\"` — crate-wide totals (one row each).\n- `function = \"<symbol>\"` + `unit = \"lines\"`|`\"copies\"` — per-function rows."
+                    "description": "**`llvm-lines`** — count of LLVM IR lines (or monomorphisation copies) for a function (u64). Filter tags:\n- `summary_unit = \"lines\"` or `\"copies\"` — crate-wide totals (one row each).\n- `function = \"<symbol>\"` + `unit = \"lines\"`|`\"copies\"` — per-function rows.",
+                    "type": "string"
                   }
                 }
               }

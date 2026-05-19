@@ -439,6 +439,15 @@ enum ExperimentCmd {
         /// Include per-step measurements in human-readable output.
         #[arg(short = 'v', long)]
         verbose: bool,
+        /// Persist the run under `.wezel/runs/<experiment>/<id>/run.json`.
+        #[arg(
+            long,
+            action = clap::ArgAction::Set,
+            value_parser = clap::builder::BoolishValueParser::new(),
+            default_value = "yes",
+            value_name = "yes|no",
+        )]
+        save: bool,
     },
     /// List available experiments.
     List {
@@ -651,6 +660,7 @@ fn main() -> ExitCode {
                 project_dir,
                 output_format,
                 verbose,
+                save,
             } => {
                 let project_dir = resolve_project_dir(project_dir);
                 run_result((|| -> anyhow::Result<()> {
@@ -659,6 +669,14 @@ fn main() -> ExitCode {
                     let mut caching = wezel_bench::fetch::CachingFetcher::new(&mut fetcher);
                     let reporter = (output_format == OutputFormat::Human)
                         .then(progress::IndicatifReporter::new);
+
+                    let branch = wezel_bench::git::current_branch(&ws.project_dir)
+                        .ok()
+                        .flatten();
+                    let dirty = wezel_bench::git::is_dirty(&ws.project_dir).unwrap_or(false);
+                    let started_at = wezel_bench::run::utc_timestamp_rfc3339();
+                    let t0 = std::time::Instant::now();
+
                     let (steps, summary_defs) = wezel_bench::run::run_experiment(
                         &experiment,
                         &ws,
@@ -667,20 +685,45 @@ fn main() -> ExitCode {
                             .as_ref()
                             .map(|r| r as &dyn wezel_bench::run::RunReporter),
                     )?;
+                    let duration_ms = u64::try_from(t0.elapsed().as_millis()).unwrap_or(u64::MAX);
                     let commit = wezel_bench::git::current_sha(&ws.project_dir)?;
                     let summaries = wezel_bench::run::compute_summaries(&steps, &summary_defs);
+
+                    let saved = wezel_bench::run::SavedRun {
+                        schema_version: 1,
+                        wezel_version: env!("CARGO_PKG_VERSION").to_string(),
+                        started_at,
+                        duration_ms,
+                        dirty,
+                        branch,
+                        output: wezel_bench::run::ExperimentRunOutput {
+                            experiment,
+                            commit,
+                            steps,
+                            summaries,
+                        },
+                    };
+
+                    if save {
+                        let dir = wezel_bench::run::save_run(&ws, &saved)?;
+                        eprintln!("Saved: {}", dir.display());
+                    }
+
                     match output_format {
                         OutputFormat::Json => {
-                            let output = wezel_bench::run::ExperimentRunOutput {
-                                experiment,
-                                commit,
-                                steps,
-                                summaries,
-                            };
-                            println!("{}", serde_json::to_string_pretty(&output).unwrap());
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&saved.output).unwrap()
+                            );
                         }
                         OutputFormat::Human => {
-                            print_human_report(&experiment, &commit, &steps, &summaries, verbose);
+                            print_human_report(
+                                &saved.output.experiment,
+                                &saved.output.commit,
+                                &saved.output.steps,
+                                &saved.output.summaries,
+                                verbose,
+                            );
                         }
                     }
                     Ok(())

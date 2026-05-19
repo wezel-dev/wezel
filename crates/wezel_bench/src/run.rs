@@ -97,8 +97,7 @@ pub fn save_run(workspace: &crate::Workspace, run: &SavedRun) -> Result<std::pat
     }
 
     let exp_dir = runs_root.join(&run.output.experiment);
-    std::fs::create_dir_all(&exp_dir)
-        .with_context(|| format!("creating {}", exp_dir.display()))?;
+    std::fs::create_dir_all(&exp_dir).with_context(|| format!("creating {}", exp_dir.display()))?;
 
     let short = &run.output.commit[..7.min(run.output.commit.len())];
     let id = format!("{}-{}", run.started_at.replace(':', "-"), short);
@@ -110,8 +109,7 @@ pub fn save_run(workspace: &crate::Workspace, run: &SavedRun) -> Result<std::pat
         run_dir = exp_dir.join(format!("{id}-{suffix}"));
         suffix += 1;
     }
-    std::fs::create_dir_all(&run_dir)
-        .with_context(|| format!("creating {}", run_dir.display()))?;
+    std::fs::create_dir_all(&run_dir).with_context(|| format!("creating {}", run_dir.display()))?;
 
     let run_json = run_dir.join("run.json");
     let bytes = serde_json::to_vec_pretty(run).context("serializing SavedRun")?;

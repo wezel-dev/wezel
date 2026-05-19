@@ -711,10 +711,7 @@ fn main() -> ExitCode {
 
                     match output_format {
                         OutputFormat::Json => {
-                            println!(
-                                "{}",
-                                serde_json::to_string_pretty(&saved.output).unwrap()
-                            );
+                            println!("{}", serde_json::to_string_pretty(&saved.output).unwrap());
                         }
                         OutputFormat::Human => {
                             print_human_report(

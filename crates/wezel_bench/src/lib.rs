@@ -300,7 +300,10 @@ fn build_step_def(common: &serde_json::Value, forager: &ForagerSchema) -> serde_
                 additional.clone(),
                 {
                     "properties": {
-                        "outcome": { "description": forager.outcomes_doc }
+                        "outcome": {
+                            "type": "string",
+                            "description": forager.outcomes_doc,
+                        }
                     }
                 }
             ]

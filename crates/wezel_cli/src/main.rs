@@ -572,7 +572,10 @@ fn print_human_report(
     let dirty = if saved.dirty { " *" } else { "" };
     let dur = format_duration(saved.duration_ms);
 
-    println!("{}  ·  {short} on {branch}{dirty}  ·  {dur}", output.experiment);
+    println!(
+        "{}  ·  {short} on {branch}{dirty}  ·  {dur}",
+        output.experiment
+    );
 
     if output.summaries.is_empty() {
         println!();
@@ -625,8 +628,7 @@ fn print_human_report(
                 if !m.tags.is_empty() {
                     let mut tags: Vec<_> = m.tags.iter().collect();
                     tags.sort_by(|a, b| a.0.cmp(b.0));
-                    let joined: Vec<_> =
-                        tags.iter().map(|(k, v)| format!("{k}={v}")).collect();
+                    let joined: Vec<_> = tags.iter().map(|(k, v)| format!("{k}={v}")).collect();
                     line.push_str(&format!(" [{}]", joined.join(", ")));
                 }
                 println!("{line}");

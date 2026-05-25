@@ -394,6 +394,7 @@ enum Command {
     /// Enable shell completions for wezel commands.
     Completions,
     /// Passive build observation: aliases, event flushing, health.
+    #[command(hide = true)]
     Observe {
         #[command(subcommand)]
         cmd: ObserveCmd,

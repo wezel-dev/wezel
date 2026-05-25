@@ -15,7 +15,7 @@ pub struct GlobalConfig {
 /// Fields valid in `.wezel/config.toml` (project scope).
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ProjectConfig {
-    /// Stable project identity (generated once by `wezel setup`).
+    /// Stable project identity (generated once by `wezel project init`).
     pub project_id: uuid::Uuid,
     /// Human-readable project name.
     pub name: String,

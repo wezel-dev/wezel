@@ -51,7 +51,7 @@ fn create_config(server_url: Option<&str>) -> anyhow::Result<ProjectConfig> {
     })
 }
 
-pub fn setup_cmd(server_url: Option<&str>) -> anyhow::Result<()> {
+pub fn init_cmd(server_url: Option<&str>) -> anyhow::Result<()> {
     let path = config_path();
 
     let config = if path.exists() {

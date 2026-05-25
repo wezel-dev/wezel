@@ -1,7 +1,7 @@
 mod alias;
 mod health;
-mod setup;
+mod init;
 
 pub use alias::{alias_cmd, load_aliases};
 pub use health::health_cmd;
-pub use setup::setup_cmd;
+pub use init::init_cmd;

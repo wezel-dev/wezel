@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
 
-use cmd::{alias_cmd, health_cmd, setup_cmd};
+use cmd::{alias_cmd, health_cmd, init_cmd};
 use flush::flush_events;
 use wezel_types::{BuildEvent, PheromoneOutput};
 
@@ -375,14 +375,11 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Initialize wezel in the current project.
-    ///
-    /// Creates `.wezel/config.toml` in the current directory.
-    /// Options not passed on the command line are prompted interactively.
-    Setup {
-        /// Burrow API URL to push build timings to.
-        #[arg(long)]
-        server_url: Option<String>,
+    /// Project-scoped commands: initialize and manage external tools.
+    #[command(visible_alias = "p")]
+    Project {
+        #[command(subcommand)]
+        cmd: ProjectCmd,
     },
     /// Active measurement: run experiments across commits.
     #[command(visible_alias = "exp", visible_alias = "e")]
@@ -396,6 +393,19 @@ enum Command {
     Observe {
         #[command(subcommand)]
         cmd: ObserveCmd,
+    },
+}
+
+#[derive(Subcommand)]
+enum ProjectCmd {
+    /// Initialize wezel in the current project.
+    ///
+    /// Creates `.wezel/config.toml` in the current directory.
+    /// Options not passed on the command line are prompted interactively.
+    Init {
+        /// Burrow API URL to push build timings to.
+        #[arg(long)]
+        server_url: Option<String>,
     },
     /// Manage external tools declared under `[tools]` in `.wezel/config.toml`.
     Tool {
@@ -662,7 +672,18 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::Setup { server_url } => run_result(setup_cmd(server_url.as_deref())),
+        Command::Project { cmd } => match cmd {
+            ProjectCmd::Init { server_url } => run_result(init_cmd(server_url.as_deref())),
+            ProjectCmd::Tool { cmd } => match cmd {
+                ToolCmd::Sync { project_dir } => {
+                    let project_dir = resolve_project_dir(project_dir);
+                    run_result((|| -> anyhow::Result<()> {
+                        let ws = make_workspace(project_dir)?;
+                        tool_sync(&ws)
+                    })())
+                }
+            },
+        },
 
         Command::Completions => {
             let Some(shell) = shell::Shell::detect() else {
@@ -853,7 +874,7 @@ fn main() -> ExitCode {
             ObserveCmd::Sync => {
                 let cwd = std::env::current_dir().unwrap_or_default();
                 let Some((_, config)) = config::discover(&cwd) else {
-                    eprintln!("wezel: no project config found (run `wezel setup` first)");
+                    eprintln!("wezel: no project config found (run `wezel project init` first)");
                     return ExitCode::FAILURE;
                 };
                 let Some(ref server_url) = config.server_url else {
@@ -867,16 +888,6 @@ fn main() -> ExitCode {
                 pheromone_mgr::update_pheromones(server_url, &pheromones_dir());
                 println!("wezel sync: pheromone check done");
                 ExitCode::SUCCESS
-            }
-        },
-
-        Command::Tool { cmd } => match cmd {
-            ToolCmd::Sync { project_dir } => {
-                let project_dir = resolve_project_dir(project_dir);
-                run_result((|| -> anyhow::Result<()> {
-                    let ws = make_workspace(project_dir)?;
-                    tool_sync(&ws)
-                })())
             }
         },
     }

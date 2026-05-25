@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::config::ProjectConfig;
 
@@ -9,25 +9,23 @@ events/
 *.local.toml
 ";
 
-fn dot_wezel() -> PathBuf {
-    std::env::current_dir()
-        .expect("could not determine current directory")
-        .join(".wezel")
+fn dot_wezel(project_dir: &Path) -> PathBuf {
+    project_dir.join(".wezel")
 }
 
-fn config_path() -> PathBuf {
-    dot_wezel().join("config.toml")
+fn config_path(project_dir: &Path) -> PathBuf {
+    dot_wezel(project_dir).join("config.toml")
 }
 
-fn create_config(server_url: Option<&str>) -> anyhow::Result<ProjectConfig> {
+fn create_config(project_dir: &Path, server_url: Option<&str>) -> anyhow::Result<ProjectConfig> {
     let server_url = match server_url {
         Some(url) => Some(url.to_string()),
         None => prompt_server_url()?,
     };
 
-    let default_name = std::env::current_dir()
-        .ok()
-        .and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string()));
+    let default_name = project_dir
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string());
 
     let mut prompt = dialoguer::Input::<String>::new().with_prompt("Project name");
     if let Some(ref d) = default_name {
@@ -51,8 +49,8 @@ fn create_config(server_url: Option<&str>) -> anyhow::Result<ProjectConfig> {
     })
 }
 
-pub fn init_cmd(server_url: Option<&str>) -> anyhow::Result<()> {
-    let path = config_path();
+pub fn init_cmd(project_dir: &Path, server_url: Option<&str>) -> anyhow::Result<()> {
+    let path = config_path(project_dir);
 
     let config = if path.exists() {
         let raw = fs::read_to_string(&path)?;
@@ -60,13 +58,13 @@ pub fn init_cmd(server_url: Option<&str>) -> anyhow::Result<()> {
         println!("Using existing {}", path.display());
         config
     } else {
-        let config = create_config(server_url)?;
+        let config = create_config(project_dir, server_url)?;
         let contents = toml::to_string_pretty(&config)?;
-        fs::create_dir_all(dot_wezel())?;
+        fs::create_dir_all(dot_wezel(project_dir))?;
         fs::write(&path, &contents)?;
         // The .gitignore is part of the initial scaffold; written alongside
         // config.toml so first-run state is reproducible across machines.
-        fs::write(dot_wezel().join(".gitignore"), DEFAULT_GITIGNORE)?;
+        fs::write(dot_wezel(project_dir).join(".gitignore"), DEFAULT_GITIGNORE)?;
         println!("Created {}", path.display());
         config
     };

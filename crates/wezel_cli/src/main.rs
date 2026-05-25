@@ -373,6 +373,9 @@ fn complete_experiments() -> Vec<CompletionCandidate> {
     version = concat!(env!("CARGO_PKG_VERSION"), " (", env!("WEZEL_BUILD_SHA"), ")"),
 )]
 struct Cli {
+    /// Project root directory (defaults to current directory).
+    #[arg(long, global = true, env = "WEZEL_PROJECT_DIR", value_name = "DIR")]
+    project_dir: Option<PathBuf>,
     #[command(subcommand)]
     command: Command,
 }
@@ -417,6 +420,8 @@ enum ProjectCmd {
         #[command(subcommand)]
         cmd: ToolCmd,
     },
+    /// Show the resolved project config, declared tools, and lockfile state.
+    Status,
 }
 
 #[derive(Subcommand)]
@@ -425,29 +430,18 @@ enum ToolCmd {
     ///
     /// Idempotent: tools whose binary and schema sidecar are already present
     /// are skipped.
-    Sync {
-        /// Project root directory (defaults to current directory).
-        #[arg(long)]
-        project_dir: Option<PathBuf>,
-    },
+    Sync,
 }
 
 #[derive(Subcommand)]
 enum ExperimentCmd {
     /// Create a new experiment (interactive wizard).
-    New {
-        /// Project root directory (defaults to current directory).
-        #[arg(long)]
-        project_dir: Option<PathBuf>,
-    },
+    New,
     /// Run an experiment against the current checkout.
     Run {
         /// Experiment name (matches .wezel/experiments/<name>/).
         #[arg(add = ArgValueCandidates::new(complete_experiments))]
         experiment: String,
-        /// Project root directory (defaults to current directory).
-        #[arg(long)]
-        project_dir: Option<PathBuf>,
         /// Output format.
         #[arg(long, value_enum, default_value_t = OutputFormat::Human)]
         output_format: OutputFormat,
@@ -465,17 +459,9 @@ enum ExperimentCmd {
         save: bool,
     },
     /// List available experiments.
-    List {
-        /// Project root directory (defaults to current directory).
-        #[arg(long)]
-        project_dir: Option<PathBuf>,
-    },
+    List,
     /// Validate experiment definitions without running them.
-    Lint {
-        /// Project root directory (defaults to current directory).
-        #[arg(long)]
-        project_dir: Option<PathBuf>,
-    },
+    Lint,
     /// Manage the experiment daemon (polls server for jobs).
     Daemon {
         #[command(subcommand)]
@@ -675,19 +661,20 @@ fn main() -> ExitCode {
     clap_complete::CompleteEnv::with_factory(Cli::command).complete();
 
     let cli = Cli::parse();
+    let project_dir = resolve_project_dir(cli.project_dir);
 
     match cli.command {
         Command::Project { cmd } => match cmd {
-            ProjectCmd::Init { server_url } => run_result(init_cmd(server_url.as_deref())),
+            ProjectCmd::Init { server_url } => {
+                run_result(init_cmd(&project_dir, server_url.as_deref()))
+            }
             ProjectCmd::Tool { cmd } => match cmd {
-                ToolCmd::Sync { project_dir } => {
-                    let project_dir = resolve_project_dir(project_dir);
-                    run_result((|| -> anyhow::Result<()> {
-                        let ws = make_workspace(project_dir)?;
-                        tool_sync(&ws)
-                    })())
-                }
+                ToolCmd::Sync => run_result((|| -> anyhow::Result<()> {
+                    let ws = make_workspace(project_dir)?;
+                    tool_sync(&ws)
+                })()),
             },
+            ProjectCmd::Status => run_result(cmd::status_cmd(&project_dir)),
         },
 
         Command::Completions => {
@@ -715,8 +702,7 @@ fn main() -> ExitCode {
         }
 
         Command::Experiment { cmd } => match cmd {
-            ExperimentCmd::New { project_dir } => {
-                let project_dir = resolve_project_dir(project_dir);
+            ExperimentCmd::New => {
                 let name: String = dialoguer::Input::new()
                     .with_prompt("Experiment name")
                     .interact_text()
@@ -739,12 +725,10 @@ fn main() -> ExitCode {
             }
             ExperimentCmd::Run {
                 experiment,
-                project_dir,
                 output_format,
                 verbose,
                 save,
             } => {
-                let project_dir = resolve_project_dir(project_dir);
                 run_result((|| -> anyhow::Result<()> {
                     let ws = make_workspace(project_dir)?;
                     let mut fetcher = fetcher::ConfigFetcher::new(&ws)?;
@@ -802,19 +786,13 @@ fn main() -> ExitCode {
                     Ok(())
                 })())
             }
-            ExperimentCmd::List { project_dir } => {
-                let project_dir = resolve_project_dir(project_dir);
-                run_result(wezel_bench::run::list_experiments(&project_dir))
-            }
-            ExperimentCmd::Lint { project_dir } => {
-                let project_dir = resolve_project_dir(project_dir);
-                run_result((|| -> anyhow::Result<()> {
-                    let ws = make_workspace(project_dir)?;
-                    let mut fetcher = fetcher::ConfigFetcher::read_only(&ws)?;
-                    let mut caching = wezel_bench::fetch::CachingFetcher::new(&mut fetcher);
-                    wezel_bench::lint::run_lint(&ws, Some(&mut caching))
-                })())
-            }
+            ExperimentCmd::List => run_result(wezel_bench::run::list_experiments(&project_dir)),
+            ExperimentCmd::Lint => run_result((|| -> anyhow::Result<()> {
+                let ws = make_workspace(project_dir)?;
+                let mut fetcher = fetcher::ConfigFetcher::read_only(&ws)?;
+                let mut caching = wezel_bench::fetch::CachingFetcher::new(&mut fetcher);
+                wezel_bench::lint::run_lint(&ws, Some(&mut caching))
+            })()),
             ExperimentCmd::Daemon { cmd: daemon_cmd } => {
                 match daemon_cmd {
                     ExperimentDaemonCmd::Start {

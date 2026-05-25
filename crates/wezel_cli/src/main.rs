@@ -367,7 +367,11 @@ fn complete_experiments() -> Vec<CompletionCandidate> {
 }
 
 #[derive(Parser)]
-#[command(name = "wezel", about = "Build regression detection")]
+#[command(
+    name = "wezel",
+    about = "Build regression detection",
+    version = concat!(env!("CARGO_PKG_VERSION"), " (", env!("WEZEL_BUILD_SHA"), ")"),
+)]
 struct Cli {
     #[command(subcommand)]
     command: Command,

@@ -40,8 +40,12 @@ pub fn status_cmd(project_dir: &Path) -> Result<()> {
         let note = match (installed, locked) {
             (true, Some(_)) => String::new(),
             (true, None) => " (installed but not in wezel.lock)".to_string(),
-            (false, Some(_)) => " (locked but not installed — run `wezel project tool sync`)".to_string(),
-            (false, None) => " (declared but not installed — run `wezel project tool sync`)".to_string(),
+            (false, Some(_)) => {
+                " (locked but not installed — run `wezel project tool sync`)".to_string()
+            }
+            (false, None) => {
+                " (declared but not installed — run `wezel project tool sync`)".to_string()
+            }
         };
         println!("  {mark} {name:<12} ({}{version}){note}", source.github);
     }

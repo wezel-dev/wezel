@@ -701,35 +701,35 @@ fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
 
-        Command::Experiment { cmd } => match cmd {
-            ExperimentCmd::New => {
-                let name: String = dialoguer::Input::new()
-                    .with_prompt("Experiment name")
-                    .interact_text()
-                    .unwrap();
-                let description: String = dialoguer::Input::new()
-                    .with_prompt("Description (optional)")
-                    .allow_empty(true)
-                    .interact_text()
-                    .unwrap();
-                let description = if description.is_empty() {
-                    None
-                } else {
-                    Some(description)
-                };
-                run_result(wezel_bench::new::create_experiment(
-                    &name,
-                    description.as_deref(),
-                    &project_dir,
-                ))
-            }
-            ExperimentCmd::Run {
-                experiment,
-                output_format,
-                verbose,
-                save,
-            } => {
-                run_result((|| -> anyhow::Result<()> {
+        Command::Experiment { cmd } => {
+            match cmd {
+                ExperimentCmd::New => {
+                    let name: String = dialoguer::Input::new()
+                        .with_prompt("Experiment name")
+                        .interact_text()
+                        .unwrap();
+                    let description: String = dialoguer::Input::new()
+                        .with_prompt("Description (optional)")
+                        .allow_empty(true)
+                        .interact_text()
+                        .unwrap();
+                    let description = if description.is_empty() {
+                        None
+                    } else {
+                        Some(description)
+                    };
+                    run_result(wezel_bench::new::create_experiment(
+                        &name,
+                        description.as_deref(),
+                        &project_dir,
+                    ))
+                }
+                ExperimentCmd::Run {
+                    experiment,
+                    output_format,
+                    verbose,
+                    save,
+                } => run_result((|| -> anyhow::Result<()> {
                     let ws = make_workspace(project_dir)?;
                     let mut fetcher = fetcher::ConfigFetcher::new(&ws)?;
                     let mut caching = wezel_bench::fetch::CachingFetcher::new(&mut fetcher);
@@ -784,17 +784,15 @@ fn main() -> ExitCode {
                         }
                     }
                     Ok(())
-                })())
-            }
-            ExperimentCmd::List => run_result(wezel_bench::run::list_experiments(&project_dir)),
-            ExperimentCmd::Lint => run_result((|| -> anyhow::Result<()> {
-                let ws = make_workspace(project_dir)?;
-                let mut fetcher = fetcher::ConfigFetcher::read_only(&ws)?;
-                let mut caching = wezel_bench::fetch::CachingFetcher::new(&mut fetcher);
-                wezel_bench::lint::run_lint(&ws, Some(&mut caching))
-            })()),
-            ExperimentCmd::Daemon { cmd: daemon_cmd } => {
-                match daemon_cmd {
+                })()),
+                ExperimentCmd::List => run_result(wezel_bench::run::list_experiments(&project_dir)),
+                ExperimentCmd::Lint => run_result((|| -> anyhow::Result<()> {
+                    let ws = make_workspace(project_dir)?;
+                    let mut fetcher = fetcher::ConfigFetcher::read_only(&ws)?;
+                    let mut caching = wezel_bench::fetch::CachingFetcher::new(&mut fetcher);
+                    wezel_bench::lint::run_lint(&ws, Some(&mut caching))
+                })()),
+                ExperimentCmd::Daemon { cmd: daemon_cmd } => match daemon_cmd {
                     ExperimentDaemonCmd::Start {
                         repo_dir,
                         poll_interval,
@@ -827,9 +825,9 @@ fn main() -> ExitCode {
                         })())
                     }
                     ExperimentDaemonCmd::Status => run_result(wezel_bench::daemon::run_status()),
-                }
+                },
             }
-        },
+        }
 
         Command::Observe { cmd } => match cmd {
             ObserveCmd::Alias {

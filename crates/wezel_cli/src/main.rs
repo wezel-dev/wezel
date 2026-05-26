@@ -877,8 +877,24 @@ fn main() -> ExitCode {
 fn tool_sync(ws: &wezel_bench::Workspace) -> anyhow::Result<()> {
     let foragers: Vec<String> = ws.config.tools.foragers.keys().cloned().collect();
     if foragers.is_empty() {
-        println!("No tools declared under [tools] in .wezel/config.toml.");
+        println!("No tools declared under [tools.foragers] in .wezel/config.toml.");
         return Ok(());
+    }
+
+    let host = wezel_bench::fetch::current_target()
+        .ok_or_else(|| anyhow::anyhow!("current platform is not a recognised target triple"))?;
+    let targets = &ws.config.tools.targets;
+    if targets.is_empty() {
+        anyhow::bail!(
+            "no targets declared. Add `targets = [\"{host}\"]` under [tools] in \
+             .wezel/config.toml (new projects: `wezel project init` does this automatically)"
+        );
+    }
+    if !targets.iter().any(|t| t == host) {
+        anyhow::bail!(
+            "host target `{host}` is not in [tools] targets. Add it so the lockfile \
+             can be populated from this machine."
+        );
     }
 
     let mut fetcher = fetcher::ConfigFetcher::new(ws)?;
@@ -888,10 +904,19 @@ fn tool_sync(ws: &wezel_bench::Workspace) -> anyhow::Result<()> {
         if ws.resolve_plugin(name).is_some() && sidecar_is_current(ws, name) {
             println!("  forager-{name}  up to date");
             skipped += 1;
-            continue;
+        } else {
+            wezel_bench::fetch::PluginFetcher::fetch(&mut fetcher, name)?;
+            installed += 1;
         }
-        wezel_bench::fetch::PluginFetcher::fetch(&mut fetcher, name)?;
-        installed += 1;
+        // Cross-lock every other declared target via the .sha256 sidecar so
+        // wezel.lock is identical on every machine (host was locked by the
+        // install above).
+        for target in targets {
+            if target == host {
+                continue;
+            }
+            fetcher.lock_target(name, target)?;
+        }
     }
 
     write_schema_bundle(ws, &foragers)?;

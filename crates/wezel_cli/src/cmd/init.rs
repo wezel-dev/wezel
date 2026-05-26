@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::config::ProjectConfig;
+use crate::config::{ProjectConfig, ToolsConfig};
 
 const DEFAULT_GITIGNORE: &str = "\
 # Wezel project-local state. Add patterns here as needed.
@@ -37,6 +37,11 @@ fn create_config(project_dir: &Path, server_url: Option<&str>) -> anyhow::Result
         anyhow::bail!("project name cannot be empty");
     }
 
+    let mut targets = indexmap::IndexSet::new();
+    if let Some(t) = wezel_bench::fetch::current_target() {
+        targets.insert(t.to_string());
+    }
+
     Ok(ProjectConfig {
         project_id: uuid::Uuid::new_v4(),
         name,
@@ -46,6 +51,7 @@ fn create_config(project_dir: &Path, server_url: Option<&str>) -> anyhow::Result
         queue_dir: None,
         registries: None,
         data_branch: None,
+        tools: ToolsConfig { targets },
     })
 }
 

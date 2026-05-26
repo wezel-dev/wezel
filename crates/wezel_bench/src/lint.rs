@@ -11,7 +11,7 @@ use crate::{Workspace, build_bundle, fetch, lockfile, parse_experiment};
 /// tool sync` would produce right now (or is missing). Sidecar problems are
 /// returned as "not stale" so the existing per-step diagnostics own that
 /// failure mode — we don't want to double-report the same root cause.
-fn bundle_is_stale(workspace: &Workspace) -> bool {
+pub fn bundle_is_stale(workspace: &Workspace) -> bool {
     let bundle_path = workspace.bundle_schema_path();
     let Ok(on_disk) = std::fs::read_to_string(&bundle_path) else {
         return true;

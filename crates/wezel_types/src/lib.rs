@@ -309,13 +309,14 @@ impl SummaryDef {
 
 /// A forager job returned by `POST /api/forager/jobs/next`. Authentication
 /// is via the caller's `wez_live_…` API token (Authorization header) — no
-/// per-job claim token; the `id` is sufficient to identify the work later.
+/// per-job claim token; `id` is the queue row id, used as the round-trip
+/// handle on `POST /api/forager/run`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ForagerJob {
     pub id: u64,
     pub commit_sha: String,
-    pub project_id: u64,
+    pub project_id: uuid::Uuid,
     pub project_upstream: String,
     pub experiment_name: String,
     /// Set when this job is part of a bisection run.

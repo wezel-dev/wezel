@@ -4,7 +4,7 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use wezel_types::{ForagerRunReport, ForagerStepReport, SummaryDef};
+use wezel_types::{ExperimentRunReport, ExperimentRunStep, SummaryDef};
 
 use crate::git;
 use crate::workspace::{Scratch, Snapshot};
@@ -40,7 +40,7 @@ pub trait RunReporter: Send + Sync {
 pub struct ExperimentRunOutput {
     pub experiment: String,
     pub commit: String,
-    pub steps: Vec<ForagerStepReport>,
+    pub steps: Vec<ExperimentRunStep>,
     pub summaries: IndexMap<String, SummaryValue>,
 }
 
@@ -122,7 +122,7 @@ pub fn save_run(workspace: &crate::Workspace, run: &SavedRun) -> Result<std::pat
 /// Summaries that fail to compute (e.g. ambiguous aggregation) are logged at
 /// warn level and omitted from the result.
 pub fn compute_summaries(
-    step_reports: &[ForagerStepReport],
+    step_reports: &[ExperimentRunStep],
     summary_defs: &[SummaryDef],
 ) -> IndexMap<String, SummaryValue> {
     let mut result = IndexMap::new();
@@ -161,9 +161,9 @@ impl BurrowSession {
         }
     }
 
-    pub fn submit(&self, report: &ForagerRunReport) -> Result<()> {
+    pub fn submit(&self, report: &ExperimentRunReport) -> Result<()> {
         self.agent
-            .post(&format!("{}/api/forager/run", self.server_url))
+            .post(&format!("{}/api/runs/report", self.server_url))
             .send_json(report)
             .context("submitting run report to Burrow")?;
         Ok(())
@@ -220,7 +220,7 @@ pub fn run_experiment(
     workspace: &Workspace,
     mut fetcher: Option<&mut (dyn fetch::PluginFetcher + '_)>,
     reporter: Option<&dyn RunReporter>,
-) -> Result<(Vec<ForagerStepReport>, Vec<SummaryDef>)> {
+) -> Result<(Vec<ExperimentRunStep>, Vec<SummaryDef>)> {
     let experiment_dir = workspace
         .project_dir
         .join(".wezel")
@@ -275,7 +275,7 @@ pub fn run_experiment(
     };
 
     // Run each step.
-    let mut step_reports: Vec<ForagerStepReport> = Vec::new();
+    let mut step_reports: Vec<ExperimentRunStep> = Vec::new();
 
     for step in &experiment.steps {
         let samples = step_samples
@@ -351,7 +351,7 @@ pub fn run_experiment(
             r.step_finished(&step.name);
         }
 
-        step_reports.push(ForagerStepReport {
+        step_reports.push(ExperimentRunStep {
             step: step.name.clone(),
             measurements: all_measurements,
         });
